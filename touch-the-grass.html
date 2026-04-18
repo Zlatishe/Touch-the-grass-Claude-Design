@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Touch the Grass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night:       oklch(0.10 0.018 148);
+    --paper:       oklch(0.94 0.04 95);
+    --moss-glow:   oklch(0.78 0.14 115);
+    --ink:         oklch(0.92 0.04 95);
+    --ink-soft:    oklch(0.65 0.03 100);
+    --rule:        oklch(0.26 0.02 140);
+    --rule-mid:    oklch(0.20 0.015 140);
+    --sans:        "Space Mono", "Courier New", monospace;
+    --display:     "Space Grotesk", "Helvetica Neue", sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--night);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    touch-action: none;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #root {
+    width: 100vw;
+    height: 100dvh;
+    position: relative;
+  }
+
+  canvas.grass {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  /* ============================================================
+     CHROME OVERLAY
+  ============================================================ */
+  .chrome {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .chrome > * { pointer-events: auto; }
+
+  /* ---- Wordmark ---- */
+  .wordmark {
+    position: absolute;
+    top: max(22px, calc(env(safe-area-inset-top, 0px) + 16px));
+    left: max(24px, calc(env(safe-area-inset-left, 0px) + 18px));
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    text-shadow: 0 2px 24px oklch(0 0 0 / 0.8);
+  }
+  .wordmark-rule {
+    width: 100%;
+    height: 1px;
+    background: var(--rule);
+    margin: 8px 0 7px;
+  }
+  .wordmark .sub {
+    display: block;
+    font-family: var(--sans);
+    font-weight: 400;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    color: var(--ink-soft);
+    line-height: 1;
+  }
+
+  /* ---- Mode picker ---- */
+  .input-picker {
+    position: absolute;
+    top: max(22px, calc(env(safe-area-inset-top, 0px) + 16px));
+    right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
+    display: flex;
+    align-items: center;
+    background: oklch(0.09 0.012 148 / 0.90);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid oklch(0.28 0.02 145 / 0.65);
+  }
+  .input-picker .sep {
+    color: oklch(0.32 0.02 140);
+    font-size: 11px;
+    padding: 0 3px;
+    pointer-events: none;
+    line-height: 1;
+  }
+  .input-picker button {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 11px 20px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 400;
+    color: oklch(0.80 0.03 100);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.12s, background 0.12s, border-color 0.12s;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .input-picker button:hover { color: var(--ink); border-color: oklch(0.32 0.02 145); }
+  .input-picker button.active {
+    background: var(--ink);
+    color: oklch(0.08 0.015 150);
+    font-weight: 700;
+    border-color: transparent;
+  }
+
+  /* ---- Camera panel ---- */
+  .cam-panel {
+    position: absolute;
+    top: 80px;
+    right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
+    width: 220px;
+    background: oklch(0.10 0.018 148 / 0.93);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid oklch(0.26 0.02 145 / 0.65);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    z-index: 15;
+    box-shadow: 0 8px 36px oklch(0 0 0 / 0.55);
+  }
+  .cam-video-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 6px;
+    overflow: hidden;
+    background: oklch(0.06 0.02 148);
+    margin-bottom: 9px;
+  }
+  .cam-panel video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+  .hand-dot {
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--moss-glow);
+    border: 2px solid var(--night);
+    box-shadow: 0 0 0 3px oklch(0.78 0.14 115 / 0.35);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .cam-status {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px;
+  }
+  .dot-indicator {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block; margin-right: 6px;
+    background: var(--moss-glow);
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  .cam-status.off .dot-indicator { background: oklch(0.32 0.01 120); animation: none; }
+  @keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  /* ---- Tweaks panel ---- */
+  .tweaks {
+    position: absolute;
+    bottom: max(64px, calc(env(safe-area-inset-bottom, 0px) + 54px));
+    right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
+    width: 282px;
+    background: oklch(0.10 0.018 148 / 0.97);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid oklch(0.26 0.02 145 / 0.75);
+    border-radius: 6px;
+    padding: 16px 18px;
+    z-index: 20;
+    display: none;
+    box-shadow: 0 10px 48px oklch(0 0 0 / 0.65);
+  }
+  .tweaks.on { display: block; }
+  .tweaks h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    letter-spacing: -0.04em;
+  }
+  .tweaks .hint { font-size: 11px; color: var(--ink-soft); margin-bottom: 13px; }
+  .tweak-row { margin: 11px 0; }
+  .tweak-row label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--ink-soft); margin-bottom: 6px;
+  }
+  .tweak-row label b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tweak-row input[type=range] {
+    width: 100%; -webkit-appearance: none; appearance: none;
+    height: 2px; background: oklch(0.26 0.02 145); border-radius: 2px; outline: none;
+    cursor: pointer;
+  }
+  .tweak-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--moss-glow); cursor: pointer; border: 2px solid oklch(0.08 0.015 150);
+  }
+  .tweak-row input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--moss-glow); cursor: pointer; border: 2px solid oklch(0.08 0.015 150);
+  }
+  .palette-row { display: flex; gap: 6px; margin-top: 8px; }
+  .palette-row button {
+    flex: 1; border: 1px solid oklch(0.26 0.02 145); background: transparent;
+    padding: 8px 4px; border-radius: 6px; font-family: var(--sans); font-size: 10px;
+    color: var(--ink-soft); cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; gap: 5px; transition: border-color 0.14s, color 0.14s;
+    pointer-events: auto;
+  }
+  .palette-row button.active { border-color: var(--ink); color: var(--ink); }
+  .palette-row .swatches { display: flex; gap: 2px; }
+  .palette-row .swatches span { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* ---- Cursor ring ---- */
+  .cursor-ring {
+    position: absolute;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 1px solid oklch(0.78 0.14 115 / 0.42);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 5;
+    will-change: left, top;
+  }
+  .cursor-ring::before {
+    content: "";
+    position: absolute; inset: 20px;
+    border-radius: 50%;
+    background: oklch(0.85 0.13 95 / 0.13);
+    box-shadow: 0 0 22px 4px oklch(0.85 0.13 95 / 0.11);
+  }
+
+  /* ---- Error toast ---- */
+  .error-toast {
+    position: absolute;
+    top: 80px;
+    right: max(24px, 14px);
+    background: oklch(0.22 0.10 30 / 0.94);
+    border: 1px solid oklch(0.46 0.14 30);
+    color: oklch(0.90 0.04 30);
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    max-width: 260px;
+    z-index: 30;
+  }
+
+  /* ---- Status bar ---- */
+  .status-bar {
+    position: absolute;
+    bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+    left: max(24px, calc(env(safe-area-inset-left, 0px) + 18px));
+    right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .status-text {
+    font-size: 11px;
+    color: oklch(0.40 0.015 130);
+    letter-spacing: 0.03em;
+  }
+  .tweaks-toggle {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: oklch(0.48 0.02 130);
+    background: transparent;
+    border: 1px solid oklch(0.22 0.015 140);
+    padding: 7px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: color 0.14s, border-color 0.14s;
+    letter-spacing: 0.01em;
+  }
+  .tweaks-toggle:hover { color: var(--ink); border-color: oklch(0.38 0.02 140); }
+
+  /* ============================================================
+     INTRO VEIL
+  ============================================================ */
+  .veil {
+    position: absolute; inset: 0;
+    z-index: 50;
+    background: var(--night);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: opacity 0.95s ease;
+    padding: 32px;
+  }
+  .veil.hidden { opacity: 0; pointer-events: none; }
+
+  /* Corner brackets — Brulia grid feel */
+  .veil-corner {
+    position: absolute;
+    width: 22px; height: 22px;
+  }
+  .veil-corner.tl {
+    top: max(22px, 18px); left: max(22px, 18px);
+    border-top: 1px solid var(--rule); border-left: 1px solid var(--rule);
+  }
+  .veil-corner.tr {
+    top: max(22px, 18px); right: max(22px, 18px);
+    border-top: 1px solid var(--rule); border-right: 1px solid var(--rule);
+  }
+  .veil-corner.bl {
+    bottom: max(22px, 18px); left: max(22px, 18px);
+    border-bottom: 1px solid var(--rule); border-left: 1px solid var(--rule);
+  }
+  .veil-corner.br {
+    bottom: max(22px, 18px); right: max(22px, 18px);
+    border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule);
+  }
+
+  /* Subtle vertical center-line */
+  .veil-vert {
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--rule-mid) 20%,
+      var(--rule-mid) 80%,
+      transparent 100%
+    );
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  /* Brulia crosshair mark */
+  .brulia-mark {
+    position: relative;
+    width: 30px; height: 30px;
+    border: 1px solid oklch(0.30 0.02 140);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-bottom: 22px;
+  }
+  .brulia-mark::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 5px; height: 5px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: oklch(0.38 0.03 140);
+  }
+  /* Vertical tick through the circle */
+  .brulia-mark::after {
+    content: '';
+    position: absolute;
+    top: -10px; bottom: -10px;
+    left: calc(50% - 0.5px); width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      oklch(0.28 0.02 140) 25%,
+      oklch(0.28 0.02 140) 75%,
+      transparent 100%
+    );
+  }
+
+  /* Thin horizontal rule */
+  .veil-rule {
+    width: 80px; height: 1px;
+    background: var(--rule);
+    margin-bottom: 36px;
+    flex-shrink: 0;
+  }
+
+  /* Massive title */
+  .veil h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(64px, 10vw, 134px);
+    line-height: 0.91;
+    color: var(--ink);
+    margin-bottom: 56px;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+  }
+
+  /* CTA button with corner brackets */
+  .cta-btn {
+    position: relative;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid oklch(0.42 0.025 100 / 0.65);
+    padding: 18px 52px;
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 400;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: border-color 0.2s, color 0.2s;
+    flex-shrink: 0;
+  }
+  .cta-btn:hover { border-color: oklch(0.65 0.03 100); }
+  .cta-btn:active { opacity: 0.75; }
+
+  /* L-bracket corners on CTA */
+  .cc { position: absolute; width: 11px; height: 11px; }
+  .cc.tl { top: -3px; left: -3px; border-top: 1px solid var(--ink); border-left: 1px solid var(--ink); }
+  .cc.tr { top: -3px; right: -3px; border-top: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+  .cc.bl { bottom: -3px; left: -3px; border-bottom: 1px solid var(--ink); border-left: 1px solid var(--ink); }
+  .cc.br { bottom: -3px; right: -3px; border-bottom: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+
+  /* ============================================================
+     RESPONSIVE
+  ============================================================ */
+  @media (max-width: 640px) {
+    .wordmark { font-size: 18px; top: max(14px, calc(env(safe-area-inset-top,0px)+10px)); left: 16px; }
+    .wordmark .sub { font-size: 13px; }
+    .wordmark-rule { margin: 6px 0 5px; }
+    .input-picker {
+      top: max(14px, calc(env(safe-area-inset-top,0px)+10px));
+      right: 16px; padding: 3px;
+    }
+    .input-picker button { padding: 9px 13px; font-size: 12px; }
+    .cam-panel { top: 62px; right: 16px; width: 168px; padding: 10px; }
+    .tweaks { right: 16px; width: calc(100vw - 32px); max-width: 292px; }
+    .status-bar { left: 16px; right: 16px; }
+    .veil h1 { font-size: clamp(52px, 14vw, 82px); margin-bottom: 44px; }
+    .cta-btn { padding: 16px 38px; font-size: 15px; }
+    .veil-vert { display: none; }
+    .veil { padding: 20px; }
+  }
+  @media (max-width: 380px) {
+    .input-picker button { padding: 8px 10px; font-size: 11px; }
+    .veil h1 { font-size: 46px; }
+    .cta-btn { padding: 14px 28px; }
+  }
+  /* Tall narrow phones: pull title up slightly */
+  @media (max-height: 700px) {
+    .veil h1 { margin-bottom: 36px; }
+    .brulia-mark { margin-bottom: 14px; }
+    .veil-rule { margin-bottom: 26px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+/* ============================================================
+   PALETTES
+============================================================ */
+const PALETTES = {
+  midnight: {
+    bg: "oklch(0.08 0.015 150)",
+    horizon: "oklch(0.02 0.005 150 / 0.95)",
+    horizonMid: "oklch(0.04 0.008 150 / 0.55)",
+    vignette: "oklch(0.02 0.005 150 / 0.6)",
+    handTint: "oklch(0.85 0.13 140 / 0.12)",
+    shades: [
+      "oklch(0.68 0.16 140)", "oklch(0.55 0.15 143)",
+      "oklch(0.42 0.13 145)", "oklch(0.30 0.10 148)", "oklch(0.20 0.07 150)"
+    ],
+    spine: "oklch(0.85 0.14 135)"
+  },
+  ember: {
+    bg: "oklch(0.10 0.022 30)",
+    horizon: "oklch(0.02 0.008 28 / 0.95)",
+    horizonMid: "oklch(0.04 0.01 28 / 0.55)",
+    vignette: "oklch(0.02 0.01 25 / 0.6)",
+    handTint: "oklch(0.82 0.16 60 / 0.15)",
+    shades: [
+      "oklch(0.65 0.15 60)", "oklch(0.52 0.14 50)",
+      "oklch(0.40 0.12 42)", "oklch(0.28 0.09 35)", "oklch(0.18 0.06 30)"
+    ],
+    spine: "oklch(0.85 0.15 60)"
+  },
+  abyss: {
+    bg: "oklch(0.08 0.022 265)",
+    horizon: "oklch(0.02 0.008 270 / 0.95)",
+    horizonMid: "oklch(0.04 0.01 270 / 0.55)",
+    vignette: "oklch(0.01 0.005 270 / 0.6)",
+    handTint: "oklch(0.78 0.14 210 / 0.15)",
+    shades: [
+      "oklch(0.62 0.13 215)", "oklch(0.50 0.12 225)",
+      "oklch(0.38 0.11 240)", "oklch(0.26 0.09 255)", "oklch(0.18 0.07 265)"
+    ],
+    spine: "oklch(0.82 0.12 210)"
+  }
+};
+
+/* ============================================================
+   HAND TRACKER  — MediaPipe Tasks Vision
+   Uses a Blob-URL ESM shim so it works in sandboxed iframes.
+   Falls back GPU → CPU for broader mobile support.
+============================================================ */
+const MODEL_URL =
+  "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+const WASM_URL =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+const VISION_CDN =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+async function loadVision() {
+  try {
+    const src = `import * as m from "${VISION_CDN}"; export const mod = m;`;
+    const blob = new Blob([src], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    try { return (await import(url)).mod; } finally { URL.revokeObjectURL(url); }
+  } catch (_) {
+    return import(VISION_CDN);
+  }
+}
+
+async function startHandTracker({ videoEl, onFrame, onError, onReady }) {
+  let stream = null, landmarker = null, stopped = false, lastTs = -1;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    videoEl.srcObject = stream;
+    videoEl.setAttribute("playsinline", "");
+    videoEl.muted = true;
+    await videoEl.play();
+
+    const vision = await loadVision();
+    const fileset = await vision.FilesetResolver.forVisionTasks(WASM_URL);
+
+    const baseOpts = { modelAssetPath: MODEL_URL };
+    try {
+      landmarker = await vision.HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { ...baseOpts, delegate: "GPU" }, numHands: 1, runningMode: "VIDEO"
+      });
+    } catch (_) {
+      landmarker = await vision.HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { ...baseOpts, delegate: "CPU" }, numHands: 1, runningMode: "VIDEO"
+      });
+    }
+    onReady?.();
+
+    const loop = () => {
+      if (stopped) return;
+      requestAnimationFrame(loop);
+      const ts = performance.now();
+      if (videoEl.readyState < 2 || ts === lastTs) return;
+      lastTs = ts;
+      try {
+        const res = landmarker.detectForVideo(videoEl, ts);
+        if (res?.landmarks?.length > 0) {
+          const pts = res.landmarks[0];
+          const ix = [0, 5, 9, 13, 17];
+          let sx = 0, sy = 0;
+          ix.forEach(i => { sx += pts[i].x; sy += pts[i].y; });
+          onFrame({ x: 1 - sx / ix.length, y: sy / ix.length });
+        } else {
+          onFrame(null);
+        }
+      } catch (_) {}
+    };
+    loop();
+  } catch (e) {
+    onError?.(e.message || String(e));
+  }
+  return () => {
+    stopped = true;
+    stream?.getTracks().forEach(t => t.stop());
+    try { landmarker?.close(); } catch (_) {}
+  };
+}
+
+/* ============================================================
+   GRASS FIELD  — canvas renderer
+   Smooth multi-segment spline blades with physics-based sway.
+   Auto-reduces quality on small/touch screens for perf.
+============================================================ */
+function GrassField({ palette, density, bladeLength, wind, paused, handRef }) {
+  const canvasRef = React.useRef(null);
+  const bladesRef = React.useRef([]);
+  const sizeRef   = React.useRef({ w: 0, h: 0 });
+  const rafRef    = React.useRef(0);
+  const histRef   = React.useRef([]);
+
+  const isMobile = window.innerWidth < 640 || navigator.maxTouchPoints > 1;
+  const SEGS = isMobile ? 4 : 5;
+
+  const buildBlades = React.useCallback((w, h) => {
+    const eff = density * (isMobile ? 0.55 : 1.0);
+    const n   = Math.round((w * h / 1000) * eff);
+    const arr = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const depth = Math.pow(Math.max(0, Math.min(1, y / h)), 0.85);
+      arr[i] = {
+        x, y, depth,
+        len:      bladeLength * (0.40 + depth * 1.15) * (0.78 + Math.random() * 0.50),
+        maxW:     2.5 + depth * 8.0 + Math.random() * 2.0,
+        shade:    Math.random(),
+        restAngle:(Math.random() - 0.5) * 0.30,
+        curl:     (Math.random() - 0.5) * 0.40,
+        bellyPos: 0.28 + Math.random() * 0.18,
+        angle:    0, vAngle: 0,
+        phase:    Math.random() * Math.PI * 2,
+        phase2:   Math.random() * Math.PI * 2,
+        stiffness:0.014 + Math.random() * 0.020,
+        damping:  0.90  + Math.random() * 0.05,
+        mass:     0.6   + Math.random() * 0.8,
+      };
+      arr[i].angle = arr[i].restAngle;
+    }
+    arr.sort((a, b) => a.y - b.y);
+    return arr;
+  }, [density, bladeLength, isMobile]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onResize = () => {
+      const dpr  = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width  = Math.floor(rect.width  * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      canvas.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+      sizeRef.current = { w: rect.width, h: rect.height };
+      bladesRef.current = buildBlades(rect.width, rect.height);
+    };
+    onResize();
+    const ro = new ResizeObserver(onResize);
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, [buildBlades]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    const pickColor = (shade, depth) => {
+      const bias  = Math.max(0, 1 - depth) * 0.45;
+      const adj   = Math.min(0.999, shade * (1 - bias) + bias);
+      const shades = palette.shades;
+      return shades[Math.min(shades.length - 1, Math.floor(adj * shades.length))];
+    };
+
+    const halfW = (t, bp, maxW) => {
+      const k = t < bp ? t / bp : (1 - t) / (1 - bp);
+      return k * k * (3 - 2 * k) * maxW * 0.5;
+    };
+
+    const loop = (ts) => {
+      rafRef.current = requestAnimationFrame(loop);
+      if (paused) return;
+      const { w, h } = sizeRef.current;
+      const blades = bladesRef.current;
+      const hand   = handRef.current;
+
+      // Hand velocity for extra push strength
+      const hist = histRef.current;
+      if (hand?.active) {
+        hist.push({ x: hand.x, y: hand.y, t: ts });
+        if (hist.length > 5) hist.shift();
+      } else { hist.length = 0; }
+      let handSpeed = 0;
+      if (hist.length >= 2) {
+        const a = hist[0], b = hist[hist.length - 1];
+        const dt = Math.max(0.001, (b.t - a.t) / 1000);
+        handSpeed = Math.hypot((b.x - a.x) / dt, (b.y - a.y) / dt);
+      }
+
+      const wt    = ts / 1000;
+      const wSlow = 0.35 + wind * 0.45;
+      const wFast = 1.60 + wind * 1.20;
+      const wStr  = 0.04 + wind * 0.22;
+      const IR    = 210, IR2 = IR * IR;
+      const push  = 1.8 + Math.min(1.5, handSpeed * 0.002);
+
+      ctx.fillStyle = palette.bg;
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < blades.length; i++) {
+        const b = blades[i];
+        const wTarget =
+          (Math.sin(wt * wSlow + b.phase  + b.x * 0.004) +
+           Math.sin(wt * wFast + b.phase2 + b.x * 0.012) * 0.35) * wStr;
+
+        let hTarget = 0;
+        if (hand?.active) {
+          const dx = b.x - hand.x, dy = b.y - hand.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < IR2) {
+            const d = Math.sqrt(d2) + 1e-4;
+            const u = 1 - d / IR;
+            hTarget = (dx / d) * u * u * (3 - 2 * u) * push;
+          }
+        }
+
+        let tgt = Math.max(-1.4, Math.min(1.4, b.restAngle + wTarget + hTarget));
+        b.vAngle = (b.vAngle + ((tgt - b.angle) * b.stiffness) / b.mass) * b.damping;
+        b.angle += b.vAngle;
+
+        // Build smooth centerline
+        const pts = new Array(SEGS + 1);
+        pts[0] = { x: b.x, y: b.y };
+        for (let s = 1; s <= SEGS; s++) {
+          const t  = s / SEGS;
+          const ts2 = t * t * (3 - 2 * t);
+          pts[s] = {
+            x: b.x + Math.sin(b.angle * ts2) * b.len * t + b.curl * ts2 * b.len * 0.18,
+            y: b.y - Math.cos(b.angle * ts2) * b.len * t * 0.97
+          };
+        }
+        const tipX = pts[SEGS].x, tipY = pts[SEGS].y;
+
+        // Perpendicular sides
+        const L = new Array(SEGS + 1), R = new Array(SEGS + 1);
+        for (let s = 0; s <= SEGS; s++) {
+          const p0 = pts[Math.max(0, s - 1)], p1 = pts[Math.min(SEGS, s + 1)];
+          const tx = p1.x - p0.x, ty = p1.y - p0.y;
+          const tl = Math.hypot(tx, ty) || 1;
+          const px = -ty / tl, py = tx / tl;
+          const hw = halfW(s / SEGS, b.bellyPos, b.maxW);
+          L[s] = { x: pts[s].x + px * hw, y: pts[s].y + py * hw };
+          R[s] = { x: pts[s].x - px * hw, y: pts[s].y - py * hw };
+        }
+
+        ctx.globalAlpha = 0.40 + b.depth * 0.55;
+        ctx.fillStyle = pickColor(b.shade, b.depth);
+        ctx.beginPath();
+        ctx.moveTo(L[0].x, L[0].y);
+        for (let s = 1; s <= SEGS; s++) {
+          ctx.quadraticCurveTo(L[s-1].x, L[s-1].y, (L[s-1].x+L[s].x)*0.5, (L[s-1].y+L[s].y)*0.5);
+        }
+        ctx.lineTo(tipX, tipY);
+        for (let s = SEGS; s >= 1; s--) {
+          ctx.quadraticCurveTo(R[s].x, R[s].y, (R[s].x+R[s-1].x)*0.5, (R[s].y+R[s-1].y)*0.5);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        // Spine highlight (mid/close blades only)
+        if (b.depth > 0.30 && b.maxW > 2.2) {
+          ctx.globalAlpha *= 0.45;
+          ctx.strokeStyle = palette.spine;
+          ctx.lineWidth = 0.55;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let s = 1; s <= SEGS; s++) {
+            ctx.quadraticCurveTo(pts[s-1].x, pts[s-1].y, (pts[s-1].x+pts[s].x)*0.5, (pts[s-1].y+pts[s].y)*0.5);
+          }
+          ctx.lineTo(tipX, tipY);
+          ctx.stroke();
+        }
+      }
+
+      // Horizon fog
+      ctx.globalAlpha = 1;
+      const fog = ctx.createLinearGradient(0, 0, 0, h * 0.60);
+      fog.addColorStop(0,    palette.horizon);
+      fog.addColorStop(0.45, palette.horizonMid);
+      fog.addColorStop(1,    "oklch(0 0 0 / 0)");
+      ctx.fillStyle = fog;
+      ctx.fillRect(0, 0, w, h * 0.60);
+
+      // Vignette
+      const vig = ctx.createRadialGradient(w/2, h*0.68, Math.min(w,h)*0.25, w/2, h*0.68, Math.max(w,h)*0.85);
+      vig.addColorStop(0, "oklch(0 0 0 / 0)");
+      vig.addColorStop(1, palette.vignette);
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, w, h);
+
+      // Warm hand tint
+      if (hand?.active) {
+        const rg = ctx.createRadialGradient(hand.x, hand.y, 0, hand.x, hand.y, 160);
+        rg.addColorStop(0,   palette.handTint);
+        rg.addColorStop(0.7, "oklch(0 0 0 / 0)");
+        rg.addColorStop(1,   "oklch(0 0 0 / 0)");
+        ctx.globalCompositeOperation = "overlay";
+        ctx.fillStyle = rg;
+        ctx.beginPath();
+        ctx.arc(hand.x, hand.y, 160, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [palette, wind, paused, handRef, SEGS]);
+
+  return <canvas ref={canvasRef} className="grass" />;
+}
+
+/* ============================================================
+   TWEAKS PANEL
+============================================================ */
+function TweaksPanel({ open, state, onChange }) {
+  const set = (k, v) => onChange({ ...state, [k]: v });
+  const sliders = [
+    { key: "density",     label: "Density",      min: 0.3, max: 3.0, step: 0.05, fmt: v => v.toFixed(2) },
+    { key: "bladeLength", label: "Blade length", min: 40,  max: 180, step: 2,    fmt: v => v },
+    { key: "wind",        label: "Wind",         min: 0,   max: 1,   step: 0.01, fmt: v => v.toFixed(2) }
+  ];
+  const pals = [
+    { id: "midnight", label: "midnight", sw: ["#1a2218","#3a4a2e","#5e7747","#9bbf6e"] },
+    { id: "ember",    label: "ember",    sw: ["#1a1208","#3a2210","#7a4a18","#c78940"] },
+    { id: "abyss",    label: "abyss",    sw: ["#0d1228","#1f2a4a","#3d567a","#7ea7d8"] }
+  ];
+  return (
+    <div className={`tweaks ${open ? "on" : ""}`}>
+      <h3>Tweaks</h3>
+      <div className="hint">Tune the field</div>
+      {sliders.map(({ key, label, min, max, step, fmt }) => (
+        <div key={key} className="tweak-row">
+          <label>{label} <b>{fmt(state[key])}</b></label>
+          <input type="range" min={min} max={max} step={step}
+            value={state[key]} onChange={e => set(key, +e.target.value)} />
+        </div>
+      ))}
+      <div className="tweak-row" style={{ marginTop: 14 }}>
+        <label style={{ marginBottom: 8 }}>Palette</label>
+        <div className="palette-row">
+          {pals.map(p => (
+            <button key={p.id} className={state.palette === p.id ? "active" : ""} onClick={() => set("palette", p.id)}>
+              <span className="swatches">
+                {p.sw.map((s, i) => <span key={i} style={{ background: s }} />)}
+              </span>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   APP
+============================================================ */
+const isTouchPrimary = () => navigator.maxTouchPoints > 1 || "ontouchstart" in window;
+
+const DEFAULTS = {
+  density:     isTouchPrimary() ? 2.0 : 3.4,
+  bladeLength: 130,
+  wind:        0.22,
+  palette:     "midnight"
+};
+
+const MODES = [
+  { id: "cursor", label: "Touch" },
+  { id: "camera", label: "Camera" },
+  { id: "keys",   label: "Keys" }
+];
+
+const STATUS = {
+  cursor: "Move · drag · swipe",
+  camera: "Wave your hand",
+  keys:   "WASD · arrow keys"
+};
+
+function App() {
+  const [entered,    setEntered]    = React.useState(false);
+  const [inputMode,  setInputMode]  = React.useState("cursor");
+  const [camStatus,  setCamStatus]  = React.useState("off");
+  const [camError,   setCamError]   = React.useState("");
+  const [tweaksOpen, setTweaksOpen] = React.useState(false);
+  const [cfg,        setCfg]        = React.useState(DEFAULTS);
+
+  const handRef    = React.useRef({ x: -9999, y: -9999, active: false });
+  const cursorRef  = React.useRef(null);
+  const videoRef   = React.useRef(null);
+  const camDotRef  = React.useRef(null);
+  const camStopRef = React.useRef(null);
+  const keyRef     = React.useRef({ x: 0.5, y: 0.65, vx: 0, vy: 0, keys: new Set() });
+
+  /* ---- cursor / touch ---- */
+  React.useEffect(() => {
+    if (!entered || inputMode !== "cursor") return;
+    const show = (x, y) => {
+      handRef.current = { x, y, active: true };
+      if (cursorRef.current) {
+        cursorRef.current.style.left    = x + "px";
+        cursorRef.current.style.top     = y + "px";
+        cursorRef.current.style.opacity = "1";
+      }
+    };
+    const hide = () => {
+      handRef.current = { ...handRef.current, active: false };
+      if (cursorRef.current) cursorRef.current.style.opacity = "0";
+    };
+    const onMouse = e => show(e.clientX, e.clientY);
+    const onTouch = e => {
+      if (e.touches?.length > 0) show(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    window.addEventListener("mousemove", onMouse);
+    window.addEventListener("mouseleave", hide);
+    window.addEventListener("touchstart", onTouch, { passive: true });
+    window.addEventListener("touchmove",  onTouch, { passive: true });
+    window.addEventListener("touchend",   hide);
+    window.addEventListener("touchcancel",hide);
+    return () => {
+      window.removeEventListener("mousemove",  onMouse);
+      window.removeEventListener("mouseleave", hide);
+      window.removeEventListener("touchstart", onTouch);
+      window.removeEventListener("touchmove",  onTouch);
+      window.removeEventListener("touchend",   hide);
+      window.removeEventListener("touchcancel",hide);
+    };
+  }, [inputMode, entered]);
+
+  /* ---- keyboard ---- */
+  React.useEffect(() => {
+    if (!entered || inputMode !== "keys") return;
+    const st = keyRef.current;
+    const KEYS = ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","a","s","d"];
+    const down = e => { if (KEYS.includes(e.key)) { st.keys.add(e.key); e.preventDefault(); } };
+    const up   = e => st.keys.delete(e.key);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup",   up);
+    let raf;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const k = st.keys;
+      const ax = (k.has("ArrowRight")||k.has("d")?1:0) - (k.has("ArrowLeft")||k.has("a")?1:0);
+      const ay = (k.has("ArrowDown") ||k.has("s")?1:0) - (k.has("ArrowUp")  ||k.has("w")?1:0);
+      st.vx = st.vx * 0.88 + ax * 0.006;
+      st.vy = st.vy * 0.88 + ay * 0.006;
+      st.x  = Math.max(0.02, Math.min(0.98, st.x + st.vx));
+      st.y  = Math.max(0.25, Math.min(0.95, st.y + st.vy));
+      const px = st.x * window.innerWidth, py = st.y * window.innerHeight;
+      handRef.current = { x: px, y: py, active: true };
+      if (cursorRef.current) {
+        cursorRef.current.style.left    = px + "px";
+        cursorRef.current.style.top     = py + "px";
+        cursorRef.current.style.opacity = "1";
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup",   up);
+      cancelAnimationFrame(raf);
+    };
+  }, [inputMode, entered]);
+
+  /* ---- camera / hand tracking ---- */
+  React.useEffect(() => {
+    if (!entered) return;
+    if (inputMode !== "camera") {
+      camStopRef.current?.(); camStopRef.current = null;
+      setCamStatus("off"); return;
+    }
+    setCamStatus("loading"); setCamError("");
+    startHandTracker({
+      videoEl: videoRef.current,
+      onReady: () => setCamStatus("on"),
+      onError: msg => { setCamStatus("error"); setCamError(msg || "camera error"); },
+      onFrame: hand => {
+        if (!hand) {
+          handRef.current = { ...handRef.current, active: false };
+          if (camDotRef.current)  camDotRef.current.style.opacity  = "0";
+          if (cursorRef.current)  cursorRef.current.style.opacity   = "0";
+          return;
+        }
+        const px = hand.x * window.innerWidth, py = hand.y * window.innerHeight;
+        handRef.current = { x: px, y: py, active: true };
+        if (cursorRef.current) {
+          cursorRef.current.style.left    = px + "px";
+          cursorRef.current.style.top     = py + "px";
+          cursorRef.current.style.opacity = "1";
+        }
+        if (camDotRef.current) {
+          camDotRef.current.style.left    = hand.x * 100 + "%";
+          camDotRef.current.style.top     = hand.y * 100 + "%";
+          camDotRef.current.style.opacity = "1";
+        }
+      }
+    }).then(stop => { camStopRef.current = stop; });
+    return () => { camStopRef.current?.(); camStopRef.current = null; };
+  }, [inputMode, entered]);
+
+  /* ---- cursor visibility ---- */
+  React.useEffect(() => {
+    document.body.style.cursor = entered ? "none" : "default";
+  }, [entered]);
+
+  /* ---- tweaks edit-mode bridge ---- */
+  React.useEffect(() => {
+    const onMsg = e => {
+      if (!e.data?.type) return;
+      if (e.data.type === "__activate_edit_mode")   setTweaksOpen(true);
+      if (e.data.type === "__deactivate_edit_mode") setTweaksOpen(false);
+    };
+    window.addEventListener("message", onMsg);
+    try { window.parent.postMessage({ type: "__edit_mode_available" }, "*"); } catch (_) {}
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+
+  const handleCfg = next => {
+    setCfg(next);
+    try { window.parent.postMessage({ type: "__edit_mode_set_keys", edits: next }, "*"); } catch (_) {}
+  };
+
+  const palette = PALETTES[cfg.palette] || PALETTES.midnight;
+
+  const enter = (mode) => { setEntered(true); if (mode) setInputMode(mode); };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      {/* Grass canvas */}
+      <GrassField
+        palette={palette}
+        density={cfg.density}
+        bladeLength={cfg.bladeLength}
+        wind={cfg.wind}
+        paused={!entered}
+        handRef={handRef} />
+
+      {/* Cursor ring */}
+      <div ref={cursorRef} className="cursor-ring" style={{ opacity: 0 }} />
+
+      {/* UI chrome */}
+      <div className="chrome">
+        {/* Wordmark */}
+        <div className="wordmark">
+          Touch the grass
+          <div className="wordmark-rule" />
+          <span className="sub">An interactive field / 2026</span>
+        </div>
+
+        {/* Mode picker */}
+        <div className="input-picker" role="tablist">
+          {MODES.map(({ id, label }, i) => (
+            <React.Fragment key={id}>
+              {i > 0 && <span className="sep">·</span>}
+              <button
+                role="tab"
+                aria-selected={inputMode === id}
+                className={inputMode === id ? "active" : ""}
+                onClick={() => setInputMode(id)}>
+                {label}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Camera preview panel */}
+        {inputMode === "camera" && (
+          <div className="cam-panel">
+            <div className="cam-video-wrap">
+              <video ref={videoRef} playsInline muted />
+              <div ref={camDotRef} className="hand-dot" style={{ opacity: 0 }} />
+            </div>
+            <div className={`cam-status ${camStatus === "on" ? "" : "off"}`}>
+              <span>
+                <span className="dot-indicator" />
+                {camStatus === "loading" && "Loading model…"}
+                {camStatus === "on"      && "Tracking"}
+                {camStatus === "off"     && "Off"}
+                {camStatus === "error"   && "Error"}
+              </span>
+              <span>1 hand</span>
+            </div>
+          </div>
+        )}
+
+        {/* Camera error */}
+        {camStatus === "error" && inputMode === "camera" && (
+          <div className="error-toast">Camera unavailable — {camError}</div>
+        )}
+
+        {/* Bottom status + tweaks */}
+        <div className="status-bar">
+          <span className="status-text">{STATUS[inputMode]}</span>
+          <button className="tweaks-toggle" onClick={() => setTweaksOpen(o => !o)}>
+            {tweaksOpen ? "Close" : "Tweaks"}
+          </button>
+        </div>
+
+        <TweaksPanel open={tweaksOpen} state={cfg} onChange={handleCfg} />
+      </div>
+
+      {/* Intro veil */}
+      <div className={`veil ${entered ? "hidden" : ""}`}>
+        {/* Outer corner brackets */}
+        <div className="veil-corner tl" />
+        <div className="veil-corner tr" />
+        <div className="veil-corner bl" />
+        <div className="veil-corner br" />
+
+        {/* Subtle vertical grid line */}
+        <div className="veil-vert" />
+
+        {/* Brulia crosshair motif */}
+        <div className="brulia-mark" />
+
+        {/* Thin rule */}
+        <div className="veil-rule" />
+
+        {/* Title */}
+        <h1>Touch the grass</h1>
+
+        {/* Single CTA with L-corner brackets */}
+        <button className="cta-btn" onClick={() => enter(null)}>
+          <span className="cc tl" /><span className="cc tr" />
+          <span className="cc bl" /><span className="cc br" />
+          Wander the field
+        </button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
