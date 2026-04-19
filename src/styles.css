@@ -77,6 +77,12 @@ html, body {
   -webkit-font-smoothing: antialiased;
   touch-action: none;
   overscroll-behavior: none;
+}
+
+/* Prevent body scroll when mobile tweaks sheet is open */
+body.body-lock {
+  overflow: hidden;
+  overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -180,6 +186,7 @@ canvas.grass {
   font-weight: 400;
   padding: 10px 14px;
   border-radius: 0;
+  touch-action: manipulation;
   cursor: pointer;
   letter-spacing: 0.01em;
   line-height: 1;
@@ -336,14 +343,19 @@ canvas.grass {
     visibility 0s linear 0s;              /* show BEFORE fade-in */
 }
 
-/* Drag handle — mobile only */
+/* Drag handle — mobile only; tapping dismisses the sheet */
 .sheet-handle {
   display: none;
   width: 32px; height: 3px;
   background: var(--ink-mute);
   border-radius: 2px;
   margin: 0 auto 18px;
+  cursor: pointer;
+  touch-action: none;
 }
+
+/* Allow the panel itself to scroll internally on mobile */
+.tweaks { touch-action: pan-y; }
 
 /* Heading — no rule under it */
 .tweaks-heading {

@@ -1,7 +1,7 @@
 import { PALETTES } from './palettes.js'
 
 const SLIDERS = [
-  { key: 'density',     label: 'Density',      min: 0.3, max: 3.0, step: 0.05, fmt: v => v.toFixed(2) },
+  { key: 'density',     label: 'Density',      min: 0.3, max: 4.0, step: 0.05, fmt: v => v.toFixed(2) },
   { key: 'bladeLength', label: 'Blade Length',  min: 40,  max: 180, step: 2,    fmt: v => v },
   { key: 'wind',        label: 'Wind',          min: 0,   max: 1,   step: 0.01, fmt: v => v.toFixed(2) },
 ]
@@ -21,8 +21,8 @@ export default function TweaksPanel({ open, state, onChange, onClose }) {
       <span className="pc tl" /><span className="pc tr" />
       <span className="pc bl" /><span className="pc br" />
 
-      {/* Drag handle — visible on mobile bottom sheet only */}
-      <div className="sheet-handle" />
+      {/* Sheet handle — tap to dismiss on mobile */}
+      <div className="sheet-handle" onClick={onClose} role="button" aria-label="Close field settings" />
 
       {/* Close — 40×40 chip, proper touch target */}
       <button className="tweaks-close chip" aria-label="Close field settings" onClick={onClose}>×</button>
