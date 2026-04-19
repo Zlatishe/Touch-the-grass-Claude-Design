@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import GrassField from './grass-field.jsx'
 import TweaksPanel from './tweaks.jsx'
+import StatusStrip from './status-strip.jsx'
 import { startHandTracker } from './hand-tracker.js'
 import { PALETTES } from './palettes.js'
 
@@ -15,14 +16,6 @@ const ALL_MODES = [
   { id: 'keys',   label: 'Keys' },
 ]
 
-const CAM_STATUS_LABEL = {
-  loading:  'Loading model…',
-  on:       'Tracking',
-  'no-hand':'Show your hand',
-  off:      'Off',
-  error:    'Error',
-}
-
 export default function App() {
   const [entered,    setEntered]    = useState(false)
   const [inputMode,  setInputMode]  = useState('cursor')
@@ -30,6 +23,8 @@ export default function App() {
   const [camError,   setCamError]   = useState('')
   const [tweaksOpen, setTweaksOpen] = useState(false)
   const [cfg,        setCfg]        = useState(DEFAULTS)
+  const [handConf,   setHandConf]   = useState(0)
+  const [bladeCount, setBladeCount] = useState(null)
 
   const handRef    = useRef({ x: -9999, y: -9999, active: false })
   const cursorRef  = useRef(null)
@@ -121,11 +116,13 @@ export default function App() {
         if (!hand || !hand.active) {
           handRef.current = { ...handRef.current, active: false }
           if (camDotRef.current)  camDotRef.current.style.opacity  = '0'
+          setHandConf(0)
           hideRing(); return
         }
         const px = hand.x * window.innerWidth
         const py = hand.y * window.innerHeight
         handRef.current = { x: px, y: py, active: true }
+        setHandConf(hand.confidence ?? 0)
         moveRing(px, py)
         if (camDotRef.current) {
           camDotRef.current.style.left    = hand.x * 100 + '%'
@@ -159,6 +156,11 @@ export default function App() {
     try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*') } catch (_) {}
   }
 
+  // Stable callback — same reference across renders, so GrassField's rebuild
+  // useCallback never changes and the canvas resize effect doesn't re-fire on
+  // every state update (the N4 regression: inline arrow caused 30 Hz canvas wipes)
+  const handleStats = useCallback(s => setBladeCount(s.bladeCount), [])
+
   const palette = PALETTES[cfg.palette] || PALETTES.midnight
   const camTracking = camStatus === 'on' || camStatus === 'no-hand'
 
@@ -171,100 +173,130 @@ export default function App() {
         wind={cfg.wind}
         paused={!entered}
         handRef={handRef}
+        onStats={handleStats}
       />
 
-      {/* Cursor ring */}
-      <div ref={cursorRef} className="cursor-ring" style={{ opacity: 0 }} />
+      {/* Cursor ring → bracket frame */}
+      <div ref={cursorRef} className="cursor-ring" style={{ opacity: 0 }}>
+        <span className="cr tl" /><span className="cr tr" />
+        <span className="cr bl" /><span className="cr br" />
+      </div>
 
       {/* ── UI chrome ─────────────────────────────────────────────────────── */}
       <div className="chrome">
 
-        {/* Wordmark — 32px, rule, 16px subline */}
+        {/* Gradient pedestals for legibility */}
+        <div className="chrome-pedestal-top" />
+        <div className="chrome-pedestal-bottom" />
+
+        {/* Wordmark — display title + rule + subline */}
         <div className="wordmark">
           Touch the grass
           <div className="wordmark-rule" />
           <span className="sub">An interactive field · 2026</span>
         </div>
 
-        {/* Mode picker */}
+        {/* Mode picker — Option A chips */}
         <div className="picker-wrap">
           <div className="input-picker" role="tablist">
-            {modes.map(({ id, label }, i) => (
-              <React.Fragment key={id}>
-                {i > 0 && <span className="sep">·</span>}
-                <button
-                  role="tab"
-                  aria-selected={inputMode === id}
-                  className={inputMode === id ? 'active' : ''}
-                  onClick={() => setInputMode(id)}
-                >
-                  {label}
-                </button>
-              </React.Fragment>
+            {modes.map(({ id, label }) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={inputMode === id}
+                className={`chip${inputMode === id ? ' active' : ''}`}
+                onClick={() => setInputMode(id)}
+              >
+                {label}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Camera panel */}
+        {/* Camera panel — Role B: bracket-only, small corner thumbnail on mobile */}
         {inputMode === 'camera' && (
           <div className="cam-panel">
+            <span className="pc tl" /><span className="pc tr" />
+            <span className="pc bl" /><span className="pc br" />
             <div className="cam-video-wrap">
+              <span className="vc tl" /><span className="vc tr" />
+              <span className="vc bl" /><span className="vc br" />
               <video ref={videoRef} playsInline muted />
-              {/* Skeleton overlay canvas — mirrored to match video */}
               <canvas ref={sketchRef} className="cam-sketch" />
               <div ref={camDotRef} className="hand-dot" style={{ opacity: 0 }} />
             </div>
-            <div className={`cam-status ${camTracking ? '' : 'off'}`}>
-              <span>
-                <span className="dot-indicator" />
-                {CAM_STATUS_LABEL[camStatus] || camStatus}
+            <div className="cam-status-strip">
+              <span className={`cam-track-dot ${camTracking ? 'on' : ''}`} />
+              <span className="spec">Mode</span>
+              <span className="data">
+                {camStatus === 'loading' ? 'INIT' : camTracking ? 'TRACK' : 'WAIT'}
               </span>
-              <span>1 hand</span>
+              <span className="cam-sep">·</span>
+              <span className="spec">Hands</span>
+              <span className="data">{camTracking ? '01' : '00'}</span>
+              {handConf > 0 && (
+                <>
+                  <span className="cam-sep">·</span>
+                  <span className="spec">Conf</span>
+                  <span className="data">
+                    .{Math.round(handConf * 100).toString().padStart(2, '0')}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}
 
-        {/* Camera error */}
+        {/* Camera error — ink-only toast */}
         {camStatus === 'error' && inputMode === 'camera' && (
           <div className="error-toast">
+            <span className="spec">ERR</span>
             Camera unavailable — {camError}
           </div>
         )}
 
-        {/* Tweaks panel */}
+        {/* Scrim — tap-to-close backdrop (mobile only via CSS) */}
+        {tweaksOpen && <div className="tweaks-scrim" onClick={() => setTweaksOpen(false)} />}
+
+        {/* Field settings panel */}
         <TweaksPanel open={tweaksOpen} state={cfg} onChange={handleCfg} onClose={() => setTweaksOpen(false)} />
 
-        {/* Tweaks toggle — hidden while panel is open; close lives inside the panel */}
+        {/* Field settings toggle — chip, hidden when panel is open */}
         {!tweaksOpen && (
           <button
-            className="tweaks-toggle"
+            className="chip tweaks-toggle"
             onClick={() => setTweaksOpen(true)}
-            aria-label="Open controls"
+            aria-label="Open field settings"
           >
-            <span className="cc tl" /><span className="cc tr" />
-            <span className="cc bl" /><span className="cc br" />
-            Controls
+            Field settings
           </button>
+        )}
+
+        {/* Status strip — bottom-left specimen annotation */}
+        {entered && (
+          <StatusStrip
+            inputMode={inputMode}
+            palette={cfg.palette}
+            bladeCount={bladeCount}
+            confidence={handConf}
+            camTracking={camTracking}
+          />
         )}
       </div>
 
-      {/* ── Intro veil ────────────────────────────────────────────────────── */}
+      {/* ── Intro veil — calm centered composition ───────────────────────── */}
       <div className={`veil ${entered ? 'hidden' : ''}`}>
-        <div className="veil-corner tl" />
-        <div className="veil-corner tr" />
-        <div className="veil-corner bl" />
-        <div className="veil-corner br" />
-        <div className="veil-vert" />
-
-        <div className="veil-rule" />
-
         <h1>Touch the grass</h1>
 
         <button className="cta-btn" onClick={() => setEntered(true)}>
           <span className="cc tl" /><span className="cc tr" />
           <span className="cc bl" /><span className="cc br" />
-          Wander the field
+          Begin
         </button>
+
+        <div className="veil-rule">
+          <span className="veil-rule-label">An interactive field · 2026</span>
+        </div>
       </div>
     </div>
   )

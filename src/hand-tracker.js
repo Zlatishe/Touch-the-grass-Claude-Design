@@ -224,7 +224,8 @@ export async function startHandTracker({ videoEl, sketchEl, onFrame, onError, on
       const x = filterX.filter(1 - raw.x, ts)
       const y = filterY.filter(raw.y, ts)
 
-      onFrame?.({ x, y, active: currentOpen, open: currentOpen })
+      const confidence = result.handednesses?.[0]?.[0]?.score ?? 0
+      onFrame?.({ x, y, active: currentOpen, open: currentOpen, confidence, landmarkCount: pts.length })
     }
     loop()
   } catch (e) {
