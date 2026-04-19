@@ -1,5 +1,6 @@
 export const PALETTES = {
   midnight: {
+    name: 'Meadow',
     bg: 'oklch(0.08 0.015 150)',
     horizon: 'oklch(0.02 0.005 150 / 0.95)',
     horizonMid: 'oklch(0.04 0.008 150 / 0.55)',
@@ -12,6 +13,7 @@ export const PALETTES = {
     spine: 'oklch(0.85 0.14 135)',
   },
   ember: {
+    name: 'Ember',
     bg: 'oklch(0.10 0.022 30)',
     horizon: 'oklch(0.02 0.008 28 / 0.95)',
     horizonMid: 'oklch(0.04 0.01 28 / 0.55)',
@@ -24,6 +26,7 @@ export const PALETTES = {
     spine: 'oklch(0.85 0.15 60)',
   },
   abyss: {
+    name: 'Tide',
     bg: 'oklch(0.08 0.022 265)',
     horizon: 'oklch(0.02 0.008 270 / 0.95)',
     horizonMid: 'oklch(0.04 0.01 270 / 0.55)',

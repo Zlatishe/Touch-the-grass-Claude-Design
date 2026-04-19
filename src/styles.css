@@ -1,18 +1,30 @@
 /* ============================================================
-   Design tokens
+   Design language — brutalist system
+   Three element roles:
+   A. Ghost-frame + brackets (.cc): Primary CTAs & toggle
+   B. Bracket-only (.pc):           Container panels
+   C. Inline tab:                   Mode picker, palette buttons
+   Rule: every visible line is 1px solid --ink or --ink-mute.
+         No sub-pixel hairlines. No opacity-faded lines.
 ============================================================ */
 :root {
   --night:     oklch(0.10 0.018 148);
-  --ink:       oklch(0.92 0.04 95);
-  --ink-soft:  oklch(0.65 0.03 100);
-  --ink-dim:   oklch(0.85 0.03 100);   /* v3 spec: inactive button text */
-  --moss-glow: oklch(0.78 0.14 115);
-  --rule:      oklch(0.26 0.02 140);
-  --rule-mid:  oklch(0.20 0.015 140);
-  --panel-bg:  oklch(0.10 0.018 148 / 0.93);
-  --panel-bd:  oklch(0.26 0.02 145 / 0.65);
-  --sans:      'Space Mono', 'Courier New', monospace;
-  --display:   'Space Grotesk', 'Helvetica Neue', sans-serif;
+  --ink:       oklch(0.92 0.04 95);       /* cream — primary */
+  --ink-mute:  oklch(0.72 0.02 85);       /* secondary — still legible */
+  --ink-soft:  oklch(0.62 0.02 90);       /* tertiary — labels */
+  --moss-glow: oklch(0.78 0.14 115);      /* green accent */
+
+  --line:      1px solid var(--ink);
+  --line-mute: 1px solid var(--ink-mute);
+
+  --radius:      4px;
+  --bracket-len: 10px;
+  --bracket-off: -2px;
+
+  --sans:    'Space Mono', 'Courier New', monospace;
+  --display: 'Space Grotesk', 'Helvetica Neue', sans-serif;
+
+  --panel-bg: oklch(0.10 0.018 148 / 0.93);
 }
 
 /* ============================================================
@@ -59,7 +71,7 @@ canvas.grass {
 .chrome > * { pointer-events: auto; }
 
 /* ============================================================
-   Wordmark — v3 spec: 32px, rule, 16px subline
+   Wordmark
 ============================================================ */
 .wordmark {
   position: absolute;
@@ -67,7 +79,7 @@ canvas.grass {
   left: max(24px, calc(env(safe-area-inset-left, 0px) + 18px));
   font-family: var(--display);
   font-weight: 700;
-  font-size: 32px;           /* v3: was 26px */
+  font-size: 32px;
   line-height: 1;
   letter-spacing: -0.04em;
   color: var(--ink);
@@ -77,21 +89,21 @@ canvas.grass {
 .wordmark-rule {
   width: 100%;
   height: 1px;
-  background: var(--rule);
+  background: var(--ink-mute);
   margin: 8px 0 7px;
 }
 .wordmark .sub {
   display: block;
   font-family: var(--sans);
   font-weight: 400;
-  font-size: 16px;           /* v3: minimum 16px */
+  font-size: 16px;
   letter-spacing: -0.01em;
   color: var(--ink-soft);
   line-height: 1;
 }
 
 /* ============================================================
-   Mode picker — v3 spec: 14×24 padding, 16px, 1px border on all tabs
+   Mode picker — Role C: inline tabs, no container frame
 ============================================================ */
 .picker-wrap {
   position: absolute;
@@ -101,65 +113,55 @@ canvas.grass {
 .input-picker {
   display: flex;
   align-items: center;
-  background: oklch(0.09 0.012 148 / 0.90);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  padding: 4px;
-  border-radius: 6px;
-  border: 1px solid var(--panel-bd);
+  background: transparent;
+  padding: 0;
+  border: none;
 }
 .input-picker .sep {
-  color: oklch(0.32 0.02 140);
-  font-size: 12px;
-  padding: 0 4px;
+  color: var(--ink-mute);
+  font-size: 14px;
+  padding: 0 8px;
   pointer-events: none;
   line-height: 1;
+  text-shadow: 0 1px 8px oklch(0 0 0 / 0.7);
 }
 .input-picker button {
   background: transparent;
-  border: 1px solid oklch(0.26 0.02 145);  /* v3: always visible 1px border */
-  padding: 14px 24px;                       /* v3: was 11×20 */
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 6px 2px 5px;
   font-family: var(--sans);
-  font-size: 16px;                          /* v3: was 14px */
+  font-size: 14px;
   font-weight: 400;
-  color: var(--ink-dim);                    /* v3: oklch(0.85) — clearly legible */
-  border-radius: 4px;
+  color: var(--ink-mute);
+  border-radius: 0;
   cursor: pointer;
-  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  transition: color 0.12s, border-color 0.12s;
   letter-spacing: -0.01em;
   line-height: 1;
   white-space: nowrap;
+  text-shadow: 0 1px 8px oklch(0 0 0 / 0.7);
 }
-.input-picker button:hover { color: var(--ink); border-color: oklch(0.45 0.02 145); }
+.input-picker button:hover { color: var(--ink); }
 .input-picker button.active {
-  background: var(--ink);
-  color: oklch(0.08 0.015 150);
-  font-weight: 700;
-  border-color: transparent;
-}
-/* Thin ruled line under the entire picker — v3 spec */
-.picker-rule {
-  width: 100%;
-  height: 1px;
-  background: var(--rule);
-  margin-top: 7px;
-  opacity: 0.6;
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  font-weight: 400;
 }
 
 /* ============================================================
-   Camera panel — v3 spec: 16px text, 4px corners
+   Camera panel — Role B: bracket-only container
 ============================================================ */
 .cam-panel {
   position: absolute;
-  /* sits below picker: top of picker + picker height (~68px) + gap */
-  top: calc(max(22px, calc(env(safe-area-inset-top, 0px) + 16px)) + 76px);
+  top: calc(max(22px, calc(env(safe-area-inset-top, 0px) + 16px)) + 56px);
   right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
   width: 240px;
   background: var(--panel-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--panel-bd);
-  border-radius: 4px;           /* v3: was 10px */
+  border: var(--line-mute);
+  border-radius: var(--radius);
   padding: 14px;
   color: var(--ink-soft);
   z-index: 15;
@@ -180,7 +182,6 @@ canvas.grass {
   transform: scaleX(-1);
   display: block;
 }
-/* Skeleton canvas — overlaid on video, same mirror as video */
 .cam-sketch {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
@@ -203,7 +204,7 @@ canvas.grass {
   justify-content: space-between;
   align-items: center;
   font-family: var(--sans);
-  font-size: 16px;             /* v3: minimum 16px */
+  font-size: 14px;
   color: var(--ink-soft);
 }
 .dot-indicator {
@@ -221,49 +222,75 @@ canvas.grass {
 @keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:1} }
 
 /* ============================================================
-   Tweaks panel — v3 spec: 16px labels, rule under heading, 4px corners
+   Controls panel — Role B: bracket-only (corner ticks, no border)
 ============================================================ */
 .tweaks {
   position: absolute;
-  bottom: calc(max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px)) + 48px);
+  bottom: calc(max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px)) + 56px);
   right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
   width: 290px;
   background: var(--panel-bg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border: 1px solid oklch(0.26 0.02 145 / 0.75);
-  border-radius: 4px;           /* v3: was 6px */
-  padding: 18px 20px;
+  border: none;
+  border-radius: var(--radius);
+  padding: 20px 22px 20px;
   z-index: 20;
   display: none;
-  box-shadow: 0 10px 48px oklch(0 0 0 / 0.65);
+  box-shadow: 0 10px 48px oklch(0 0 0 / 0.70);
 }
 .tweaks.on { display: block; }
+
 .tweaks h3 {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--ink);
-  margin-bottom: 0;
   letter-spacing: -0.04em;
+  padding-right: 28px; /* room for × button */
 }
-/* Thin rule under heading — v3 spec */
 .tweaks-rule {
+  position: relative;
   width: 100%;
   height: 1px;
-  background: var(--rule);
-  margin: 10px 0 8px;
+  background: var(--ink-mute);
+  margin: 12px 0 16px;
 }
-.tweaks .hint {
-  font-size: 16px;               /* v3: min 16px */
-  color: var(--ink-soft);
-  margin-bottom: 14px;
+.tweaks-rule::before,
+.tweaks-rule::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 6px;
+  background: var(--ink-mute);
+  top: -3px;
 }
-.tweak-row { margin: 12px 0; }
+.tweaks-rule::before { left: 0; }
+.tweaks-rule::after  { right: 0; }
+
+.tweaks-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 24px; height: 24px;
+  background: transparent;
+  border: none;
+  color: var(--ink-mute);
+  font-size: 20px;
+  font-family: var(--sans);
+  cursor: pointer;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.14s;
+  line-height: 1;
+  pointer-events: auto;
+}
+.tweaks-close:hover { color: var(--ink); }
+
+.tweak-row { margin: 10px 0; }
 .tweak-row label {
   display: flex;
   justify-content: space-between;
-  font-size: 16px;               /* v3: was 11px */
+  font-size: 14px;
   color: var(--ink-soft);
   margin-bottom: 8px;
 }
@@ -272,47 +299,63 @@ canvas.grass {
   width: 100%;
   -webkit-appearance: none; appearance: none;
   height: 2px;
-  background: oklch(0.26 0.02 145);
+  background: var(--ink-mute);
   border-radius: 2px;
   outline: none;
   cursor: pointer;
 }
 .tweak-row input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px; height: 16px;
+  width: 14px; height: 14px;
   border-radius: 50%;
-  background: var(--moss-glow);
+  background: var(--ink);
   cursor: pointer;
   border: 2px solid oklch(0.08 0.015 150);
 }
 .tweak-row input[type=range]::-moz-range-thumb {
-  width: 16px; height: 16px;
+  width: 14px; height: 14px;
   border-radius: 50%;
-  background: var(--moss-glow);
+  background: var(--ink);
   cursor: pointer;
   border: 2px solid oklch(0.08 0.015 150);
 }
+
+/* Palette buttons — Role C: inline tab style */
 .palette-row { display: flex; gap: 6px; margin-top: 8px; }
 .palette-row button {
   flex: 1;
-  border: 1px solid oklch(0.26 0.02 145);
+  border: none;
+  border-bottom: 1px solid transparent;
   background: transparent;
-  padding: 8px 4px;
-  border-radius: 4px;
+  padding: 6px 4px 5px;
+  border-radius: 0;
   font-family: var(--sans);
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 11px;
+  color: var(--ink-mute);
   cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   transition: border-color 0.14s, color 0.14s;
   pointer-events: auto;
 }
-.palette-row button.active { border-color: var(--ink); color: var(--ink); }
+.palette-row button.active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.palette-row button:hover { color: var(--ink); }
 .palette-row .swatches { display: flex; gap: 2px; }
 .palette-row .swatches span { width: 10px; height: 10px; border-radius: 2px; }
 
 /* ============================================================
-   Cursor ring — unchanged per v3 spec
+   Panel corner brackets — Role B (.pc)
+============================================================ */
+.pc { position: absolute; width: 11px; height: 11px; }
+.pc.tl { top: var(--bracket-off); left: var(--bracket-off);   border-top: var(--line-mute); border-left: var(--line-mute); }
+.pc.tr { top: var(--bracket-off); right: var(--bracket-off);  border-top: var(--line-mute); border-right: var(--line-mute); }
+.pc.bl { bottom: var(--bracket-off); left: var(--bracket-off);   border-bottom: var(--line-mute); border-left: var(--line-mute); }
+.pc.br { bottom: var(--bracket-off); right: var(--bracket-off);  border-bottom: var(--line-mute); border-right: var(--line-mute); }
+
+/* ============================================================
+   Cursor ring
 ============================================================ */
 .cursor-ring {
   position: absolute;
@@ -338,13 +381,13 @@ canvas.grass {
 ============================================================ */
 .error-toast {
   position: absolute;
-  top: calc(max(22px, calc(env(safe-area-inset-top, 0px) + 16px)) + 76px);
+  top: calc(max(22px, calc(env(safe-area-inset-top, 0px) + 16px)) + 56px);
   right: max(24px, 14px);
   background: oklch(0.22 0.10 30 / 0.94);
   border: 1px solid oklch(0.46 0.14 30);
   color: oklch(0.90 0.04 30);
   padding: 12px 16px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   font-family: var(--sans);
   font-size: 14px;
   max-width: 260px;
@@ -352,7 +395,7 @@ canvas.grass {
 }
 
 /* ============================================================
-   Tweaks toggle — bottom-right, simplified (no status line)
+   Controls toggle — Role A: ghost-frame + brackets
 ============================================================ */
 .tweaks-toggle {
   position: absolute;
@@ -360,18 +403,19 @@ canvas.grass {
   right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
   font-family: var(--sans);
   font-size: 14px;
-  color: oklch(0.50 0.02 130);
+  color: var(--ink);
   background: transparent;
-  border: 1px solid oklch(0.22 0.015 140);
-  padding: 9px 16px;
-  border-radius: 3px;
+  border: 1px solid oklch(0.42 0.025 100 / 0.65);
+  padding: 10px 18px;
+  border-radius: var(--radius);
   cursor: pointer;
   pointer-events: auto;
-  transition: color 0.14s, border-color 0.14s;
+  transition: border-color 0.2s;
   letter-spacing: 0.01em;
   z-index: 11;
 }
-.tweaks-toggle:hover { color: var(--ink); border-color: oklch(0.38 0.02 140); }
+.tweaks-toggle:hover { border-color: oklch(0.65 0.03 100); }
+.tweaks-toggle:active { opacity: 0.75; }
 
 /* ============================================================
    Intro veil
@@ -390,60 +434,49 @@ canvas.grass {
 }
 .veil.hidden { opacity: 0; pointer-events: none; }
 
-/* Corner brackets */
+/* Veil corner brackets */
 .veil-corner { position: absolute; width: 22px; height: 22px; }
-.veil-corner.tl { top: max(22px,18px); left: max(22px,18px);  border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); }
-.veil-corner.tr { top: max(22px,18px); right: max(22px,18px); border-top: 1px solid var(--rule); border-right: 1px solid var(--rule); }
-.veil-corner.bl { bottom: max(22px,18px); left: max(22px,18px);  border-bottom: 1px solid var(--rule); border-left: 1px solid var(--rule); }
-.veil-corner.br { bottom: max(22px,18px); right: max(22px,18px); border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+.veil-corner.tl { top: max(22px,18px); left: max(22px,18px);   border-top: var(--line-mute); border-left: var(--line-mute); }
+.veil-corner.tr { top: max(22px,18px); right: max(22px,18px);  border-top: var(--line-mute); border-right: var(--line-mute); }
+.veil-corner.bl { bottom: max(22px,18px); left: max(22px,18px);   border-bottom: var(--line-mute); border-left: var(--line-mute); }
+.veil-corner.br { bottom: max(22px,18px); right: max(22px,18px);  border-bottom: var(--line-mute); border-right: var(--line-mute); }
 
-/* Vertical center line */
+/* Vertical center line on veil */
 .veil-vert {
   position: absolute; top: 0; bottom: 0; left: 50%;
   width: 1px;
-  background: linear-gradient(to bottom, transparent 0%, var(--rule-mid) 20%, var(--rule-mid) 80%, transparent 100%);
-  opacity: 0.3;
+  background: linear-gradient(to bottom, transparent 0%, var(--ink-mute) 20%, var(--ink-mute) 80%, transparent 100%);
+  opacity: 0.15;
   pointer-events: none;
 }
 
-/* Brulia crosshair */
-.brulia-mark {
+/* Bracketed rule — intentional mark, not a hairline */
+.veil-rule {
   position: relative;
-  width: 30px; height: 30px;
-  border: 1px solid oklch(0.30 0.02 140);
-  border-radius: 50%;
+  width: 240px;
+  height: 1px;
+  background: var(--ink-mute);
+  margin-bottom: 40px;
   flex-shrink: 0;
-  margin-bottom: 22px;
+  align-self: center;
 }
-.brulia-mark::before {
-  content: '';
-  position: absolute; top: 50%; left: 50%;
-  width: 5px; height: 5px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: oklch(0.38 0.03 140);
-}
-.brulia-mark::after {
+.veil-rule::before,
+.veil-rule::after {
   content: '';
   position: absolute;
-  top: -10px; bottom: -10px;
-  left: calc(50% - 0.5px); width: 1px;
-  background: linear-gradient(to bottom, transparent 0%, oklch(0.28 0.02 140) 25%, oklch(0.28 0.02 140) 75%, transparent 100%);
+  width: 1px;
+  height: 8px;
+  background: var(--ink-mute);
+  top: -4px;
 }
+.veil-rule::before { left: 0; }
+.veil-rule::after  { right: 0; }
 
-/* Thin rule under crosshair */
-.veil-rule {
-  width: 80px; height: 1px;
-  background: var(--rule);
-  margin-bottom: 36px;
-  flex-shrink: 0;
-}
-
-/* H1 — v3 spec: clamp(72px, 10vw, 140px) */
+/* H1 */
 .veil h1 {
   font-family: var(--display);
   font-weight: 700;
-  font-size: clamp(72px, 10vw, 140px);  /* v3: was clamp(64, 10vw, 134) */
+  font-size: clamp(72px, 10vw, 140px);
   line-height: 0.91;
   color: var(--ink);
   margin-bottom: 56px;
@@ -451,7 +484,7 @@ canvas.grass {
   text-wrap: balance;
 }
 
-/* CTA — ghost border, Space Mono 16px, 18×52 padding, 4px corner brackets */
+/* CTA — Role A: ghost border + corner brackets (.cc) */
 .cta-btn {
   position: relative;
   background: transparent;
@@ -461,7 +494,7 @@ canvas.grass {
   font-family: var(--sans);
   font-size: 16px;
   font-weight: 400;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
   letter-spacing: 0.01em;
   transition: border-color 0.2s;
@@ -470,12 +503,12 @@ canvas.grass {
 .cta-btn:hover { border-color: oklch(0.65 0.03 100); }
 .cta-btn:active { opacity: 0.75; }
 
-/* L-bracket corners */
+/* CTA corner brackets — Role A */
 .cc { position: absolute; width: 11px; height: 11px; }
-.cc.tl { top: -3px; left: -3px;   border-top: 1px solid var(--ink); border-left: 1px solid var(--ink); }
-.cc.tr { top: -3px; right: -3px;  border-top: 1px solid var(--ink); border-right: 1px solid var(--ink); }
-.cc.bl { bottom: -3px; left: -3px;  border-bottom: 1px solid var(--ink); border-left: 1px solid var(--ink); }
-.cc.br { bottom: -3px; right: -3px; border-bottom: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+.cc.tl { top: -3px; left: -3px;   border-top: var(--line); border-left: var(--line); }
+.cc.tr { top: -3px; right: -3px;  border-top: var(--line); border-right: var(--line); }
+.cc.bl { bottom: -3px; left: -3px;   border-bottom: var(--line); border-left: var(--line); }
+.cc.br { bottom: -3px; right: -3px;  border-bottom: var(--line); border-right: var(--line); }
 
 /* ============================================================
    Responsive
@@ -487,44 +520,48 @@ canvas.grass {
     left: 16px;
   }
   .wordmark .sub { font-size: 13px; }
+
+  /* Stack picker below wordmark, left-aligned */
   .picker-wrap {
-    top: max(14px, calc(env(safe-area-inset-top, 0px) + 10px));
-    right: 16px;
+    top: max(76px, calc(env(safe-area-inset-top, 0px) + 72px));
+    right: auto;
+    left: 16px;
   }
-  .input-picker button { padding: 10px 14px; font-size: 14px; }
+
   .cam-panel {
-    top: calc(max(14px, calc(env(safe-area-inset-top, 0px) + 10px)) + 64px);
+    top: calc(max(76px, calc(env(safe-area-inset-top, 0px) + 72px)) + 40px);
     right: 16px;
-    width: 180px;
+    width: 200px;
     padding: 10px;
   }
   .cam-status { font-size: 13px; }
+
   .tweaks {
     right: 16px;
     width: calc(100vw - 32px);
     max-width: 300px;
-    bottom: calc(max(14px, calc(env(safe-area-inset-bottom, 0px) + 8px)) + 48px);
+    bottom: calc(max(14px, calc(env(safe-area-inset-bottom, 0px) + 8px)) + 56px);
   }
   .tweaks-toggle {
     right: 16px;
     bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 8px));
   }
+
   .veil h1 { font-size: clamp(52px, 14vw, 80px); margin-bottom: 44px; }
   .cta-btn { padding: 16px 36px; font-size: 15px; }
   .veil-vert { display: none; }
   .veil { padding: 20px; }
   .veil-corner { width: 16px; height: 16px; }
+  .veil-rule { width: 160px; }
 }
 
-@media (max-width: 380px) {
-  .input-picker button { padding: 8px 10px; font-size: 12px; }
+@media (max-width: 420px) {
+  .input-picker button { font-size: 13px; }
   .veil h1 { font-size: 46px; }
   .cta-btn { padding: 14px 28px; }
 }
 
 @media (max-height: 700px) {
   .veil h1 { margin-bottom: 36px; }
-  .brulia-mark { margin-bottom: 14px; }
   .veil-rule { margin-bottom: 26px; }
-  .brulia-mark::after { top: -5px; bottom: -5px; }
 }

@@ -83,7 +83,6 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
   const gridRef    = useRef(new Map())
   const sizeRef    = useRef({ w: 0, h: 0 })
   const rafRef     = useRef(0)
-  const prevTsRef  = useRef(null)
   const histRef    = useRef([])
 
   // Fixed 5 segments — same on all devices now (density handles perf, not segment count)
@@ -122,14 +121,7 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
 
     const loop = (ts) => {
       rafRef.current = requestAnimationFrame(loop)
-      if (paused) { prevTsRef.current = null; return }
-
-      // Delta-time — clamp between 0.5× and 3× of a 60fps frame
-      const dt = prevTsRef.current === null
-        ? 16.67
-        : Math.max(8.33, Math.min(50, ts - prevTsRef.current))
-      prevTsRef.current = ts
-      const dtF = dt / 16.67 // factor: 1.0 = 60fps, 2.0 = 30fps
+      if (paused) return
 
       const { w, h } = sizeRef.current
       const blades = bladesRef.current
@@ -189,17 +181,9 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
 
         const tgt = Math.max(-MAX_BEND, Math.min(MAX_BEND, b.restAngle + wTarget + handTarget))
 
-        // Near-cursor stiffness boost — blades in the inner zone snap faster (§2.2)
-        let eff = b.stiffness
-        if (nearSet.has(i) && hand?.active) {
-          const d2 = (b.x - hand.x) ** 2 + (b.y - hand.y) ** 2
-          if (d2 < (IR * 0.6) ** 2) eff *= 1.8
-        }
-
-        // Spring physics with delta-time correction
-        const accel = ((tgt - b.angle) * eff) / b.mass
-        b.vAngle = b.vAngle * Math.pow(b.damping, dtF) + accel * dtF
-        b.angle += b.vAngle * dtF
+        const accel = ((tgt - b.angle) * b.stiffness) / b.mass
+        b.vAngle = (b.vAngle + accel) * b.damping
+        b.angle += b.vAngle
 
         // ── Build smooth centerline (multi-segment spline)
         const pts = new Array(SEGS + 1)

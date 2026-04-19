@@ -183,7 +183,7 @@ export default function App() {
         <div className="wordmark">
           Touch the grass
           <div className="wordmark-rule" />
-          <span className="sub">An interactive field / 2026</span>
+          <span className="sub">An interactive field · 2026</span>
         </div>
 
         {/* Mode picker */}
@@ -203,8 +203,6 @@ export default function App() {
               </React.Fragment>
             ))}
           </div>
-          {/* Thin ruled line under picker — v3 spec */}
-          <div className="picker-rule" />
         </div>
 
         {/* Camera panel */}
@@ -234,16 +232,20 @@ export default function App() {
         )}
 
         {/* Tweaks panel */}
-        <TweaksPanel open={tweaksOpen} state={cfg} onChange={handleCfg} />
+        <TweaksPanel open={tweaksOpen} state={cfg} onChange={handleCfg} onClose={() => setTweaksOpen(false)} />
 
-        {/* Tweaks toggle — bottom-right only, simplified from status-bar */}
-        <button
-          className="tweaks-toggle"
-          onClick={() => setTweaksOpen(o => !o)}
-          aria-label={tweaksOpen ? 'Close tweaks' : 'Open tweaks'}
-        >
-          {tweaksOpen ? '×' : 'Tweaks'}
-        </button>
+        {/* Tweaks toggle — hidden while panel is open; close lives inside the panel */}
+        {!tweaksOpen && (
+          <button
+            className="tweaks-toggle"
+            onClick={() => setTweaksOpen(true)}
+            aria-label="Open controls"
+          >
+            <span className="cc tl" /><span className="cc tr" />
+            <span className="cc bl" /><span className="cc br" />
+            Controls
+          </button>
+        )}
       </div>
 
       {/* ── Intro veil ────────────────────────────────────────────────────── */}
@@ -254,7 +256,6 @@ export default function App() {
         <div className="veil-corner br" />
         <div className="veil-vert" />
 
-        <div className="brulia-mark" />
         <div className="veil-rule" />
 
         <h1>Touch the grass</h1>

@@ -1,6 +1,6 @@
-// Tweaks panel — v3 spec: 16px labels, rule under heading, 4px corners
+import { PALETTES } from './palettes.js'
 
-export default function TweaksPanel({ open, state, onChange }) {
+export default function TweaksPanel({ open, state, onChange, onClose }) {
   const set = (k, v) => onChange({ ...state, [k]: v })
 
   const sliders = [
@@ -10,17 +10,19 @@ export default function TweaksPanel({ open, state, onChange }) {
   ]
 
   const pals = [
-    { id: 'midnight', label: 'midnight', sw: ['#1a2218','#3a4a2e','#5e7747','#9bbf6e'] },
-    { id: 'ember',    label: 'ember',    sw: ['#1a1208','#3a2210','#7a4a18','#c78940'] },
-    { id: 'abyss',    label: 'abyss',    sw: ['#0d1228','#1f2a4a','#3d567a','#7ea7d8'] },
+    { id: 'midnight', sw: ['#1a2218','#3a4a2e','#5e7747','#9bbf6e'] },
+    { id: 'ember',    sw: ['#1a1208','#3a2210','#7a4a18','#c78940'] },
+    { id: 'abyss',    sw: ['#0d1228','#1f2a4a','#3d567a','#7ea7d8'] },
   ]
 
   return (
     <div className={`tweaks ${open ? 'on' : ''}`}>
-      <h3>Tweaks</h3>
-      {/* Thin rule under heading — v3 spec */}
+      <span className="pc tl" /><span className="pc tr" />
+      <span className="pc bl" /><span className="pc br" />
+      <button className="tweaks-close" aria-label="Close" onClick={onClose}>×</button>
+
+      <h3>Controls</h3>
       <div className="tweaks-rule" />
-      <div className="hint">Tune the field</div>
 
       {sliders.map(({ key, label, min, max, step, fmt }) => (
         <div key={key} className="tweak-row">
@@ -45,7 +47,7 @@ export default function TweaksPanel({ open, state, onChange }) {
               <span className="swatches">
                 {p.sw.map((s, i) => <span key={i} style={{ background: s }} />)}
               </span>
-              {p.label}
+              {PALETTES[p.id].name}
             </button>
           ))}
         </div>
