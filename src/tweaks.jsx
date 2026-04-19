@@ -24,10 +24,11 @@ export default function TweaksPanel({ open, state, onChange, onClose }) {
       {/* Drag handle — visible on mobile bottom sheet only */}
       <div className="sheet-handle" />
 
-      {/* Heading + close */}
-      <button className="tweaks-close" aria-label="Close controls" onClick={onClose}>[ × ]</button>
-      <div className="tweaks-heading">Controls</div>
-      <div className="tweaks-rule" />
+      {/* Close — 40×40 chip, proper touch target */}
+      <button className="tweaks-close chip" aria-label="Close field settings" onClick={onClose}>×</button>
+
+      {/* Heading — no rule under it */}
+      <div className="tweaks-heading">Field settings</div>
 
       {/* Sliders */}
       {SLIDERS.map(({ key, label, min, max, step, fmt }) => (
@@ -60,7 +61,7 @@ export default function TweaksPanel({ open, state, onChange, onClose }) {
             <div className="palette-swatches">
               {p.sw.map((s, i) => <span key={i} style={{ background: s }} />)}
             </div>
-            <span className="spec">{PALETTES[p.id].name.toUpperCase()}</span>
+            <span className="spec palette-tile-label">{PALETTES[p.id].name.toUpperCase()}</span>
           </button>
         ))}
       </div>

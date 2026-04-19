@@ -77,7 +77,7 @@ function pickColor(shade, depth, shades) {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function GrassField({ palette, density, bladeLength, wind, paused, handRef }) {
+export default function GrassField({ palette, density, bladeLength, wind, paused, handRef, onStats }) {
   const canvasRef  = useRef(null)
   const bladesRef  = useRef([])
   const gridRef    = useRef(new Map())
@@ -93,7 +93,8 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
     bladesRef.current = blades
     gridRef.current   = buildGrid(blades)
     sizeRef.current   = { w, h }
-  }, [density, bladeLength])
+    onStats?.({ bladeCount: blades.length })
+  }, [density, bladeLength, onStats])
 
   // Canvas resize
   useEffect(() => {

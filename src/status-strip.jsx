@@ -5,9 +5,9 @@ const MODE_LABEL = { cursor: 'TOUCH', camera: 'CAMERA', keys: 'KEYS' }
 
 /**
  * StatusStrip — bottom-left specimen annotation bar.
- * Shows: INPUT · PALETTE · FPS · CONF (camera mode only)
+ * Shows: INPUT · PALETTE · GRASS COUNT · CONF (camera mode only)
  */
-export default function StatusStrip({ inputMode, palette, fps, confidence, camTracking }) {
+export default function StatusStrip({ inputMode, palette, bladeCount, confidence, camTracking }) {
   const paletteName = PALETTES[palette]?.name?.toUpperCase() ?? palette.toUpperCase()
   const modeLabel = MODE_LABEL[inputMode] ?? inputMode.toUpperCase()
 
@@ -25,11 +25,11 @@ export default function StatusStrip({ inputMode, palette, fps, confidence, camTr
       <span className="spec">Palette</span>
       <span className="data strip-val">{paletteName}</span>
 
-      {fps !== null && (
+      {bladeCount != null && (
         <>
           <span className="strip-sep">·</span>
-          <span className="spec">FPS</span>
-          <span className="data strip-val">{fps}</span>
+          <span className="spec">Grass count</span>
+          <span className="data strip-val">{bladeCount.toLocaleString()}</span>
         </>
       )}
 

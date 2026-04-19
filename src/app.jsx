@@ -4,7 +4,6 @@ import TweaksPanel from './tweaks.jsx'
 import StatusStrip from './status-strip.jsx'
 import { startHandTracker } from './hand-tracker.js'
 import { PALETTES } from './palettes.js'
-import { useFps } from './use-fps.js'
 
 const DEFAULTS = { density: 3.4, bladeLength: 130, wind: 0.22, palette: 'midnight' }
 
@@ -17,14 +16,6 @@ const ALL_MODES = [
   { id: 'keys',   label: 'Keys' },
 ]
 
-const CAM_STATUS_LABEL = {
-  loading:  'Loading model…',
-  on:       'Tracking',
-  'no-hand':'Show your hand',
-  off:      'Off',
-  error:    'Error',
-}
-
 export default function App() {
   const [entered,    setEntered]    = useState(false)
   const [inputMode,  setInputMode]  = useState('cursor')
@@ -33,8 +24,7 @@ export default function App() {
   const [tweaksOpen, setTweaksOpen] = useState(false)
   const [cfg,        setCfg]        = useState(DEFAULTS)
   const [handConf,   setHandConf]   = useState(0)
-
-  const fps = useFps()
+  const [bladeCount, setBladeCount] = useState(null)
 
   const handRef    = useRef({ x: -9999, y: -9999, active: false })
   const cursorRef  = useRef(null)
@@ -178,6 +168,7 @@ export default function App() {
         wind={cfg.wind}
         paused={!entered}
         handRef={handRef}
+        onStats={stats => setBladeCount(stats.bladeCount)}
       />
 
       {/* Cursor ring → bracket frame */}
@@ -189,33 +180,35 @@ export default function App() {
       {/* ── UI chrome ─────────────────────────────────────────────────────── */}
       <div className="chrome">
 
-        {/* Wordmark — 32px, rule, 16px subline */}
+        {/* Gradient pedestals for legibility */}
+        <div className="chrome-pedestal-top" />
+        <div className="chrome-pedestal-bottom" />
+
+        {/* Wordmark — display title + rule + subline */}
         <div className="wordmark">
           Touch the grass
           <div className="wordmark-rule" />
           <span className="sub">An interactive field · 2026</span>
         </div>
 
-        {/* Mode picker */}
+        {/* Mode picker — Option A chips */}
         <div className="picker-wrap">
           <div className="input-picker" role="tablist">
-            {modes.map(({ id, label }, i) => (
-              <React.Fragment key={id}>
-                {i > 0 && <span className="sep">·</span>}
-                <button
-                  role="tab"
-                  aria-selected={inputMode === id}
-                  className={inputMode === id ? 'active' : ''}
-                  onClick={() => setInputMode(id)}
-                >
-                  {label}
-                </button>
-              </React.Fragment>
+            {modes.map(({ id, label }) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={inputMode === id}
+                className={`chip${inputMode === id ? ' active' : ''}`}
+                onClick={() => setInputMode(id)}
+              >
+                {label}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Camera panel — Role B: bracket-only, ink status */}
+        {/* Camera panel — Role B: bracket-only, small corner thumbnail on mobile */}
         {inputMode === 'camera' && (
           <div className="cam-panel">
             <span className="pc tl" /><span className="pc tr" />
@@ -257,19 +250,20 @@ export default function App() {
           </div>
         )}
 
-        {/* Tweaks panel */}
+        {/* Scrim — tap-to-close backdrop (mobile only via CSS) */}
+        {tweaksOpen && <div className="tweaks-scrim" onClick={() => setTweaksOpen(false)} />}
+
+        {/* Field settings panel */}
         <TweaksPanel open={tweaksOpen} state={cfg} onChange={handleCfg} onClose={() => setTweaksOpen(false)} />
 
-        {/* Tweaks toggle — hidden while panel is open; close lives inside the panel */}
+        {/* Field settings toggle — chip, hidden when panel is open */}
         {!tweaksOpen && (
           <button
-            className="tweaks-toggle"
+            className="chip tweaks-toggle"
             onClick={() => setTweaksOpen(true)}
-            aria-label="Open controls"
+            aria-label="Open field settings"
           >
-            <span className="cc tl" /><span className="cc tr" />
-            <span className="cc bl" /><span className="cc br" />
-            Controls
+            Field settings
           </button>
         )}
 
@@ -278,46 +272,26 @@ export default function App() {
           <StatusStrip
             inputMode={inputMode}
             palette={cfg.palette}
-            fps={fps}
+            bladeCount={bladeCount}
             confidence={handConf}
             camTracking={camTracking}
           />
         )}
       </div>
 
-      {/* ── Intro veil — asymmetric specimen sheet ───────────────────────── */}
+      {/* ── Intro veil — calm centered composition ───────────────────────── */}
       <div className={`veil ${entered ? 'hidden' : ''}`}>
-        {/* Screen-corner brackets */}
-        <div className="veil-corner tl" />
-        <div className="veil-corner tr" />
-        <div className="veil-corner bl" />
-        <div className="veil-corner br" />
+        <h1>Touch the grass</h1>
 
-        {/* Row 1: sequence tag (left) + artifact tag (right) */}
-        <span className="veil-seq">01 ─</span>
-        <span className="veil-artifact">[TTG-01]</span>
-
-        {/* Row 2: huge title (left) + inputs specimen (right) */}
-        <h1>Touch<br />the<br />grass</h1>
-        <div className="veil-inputs">
-          <span className="spec">Inputs</span>
-          <div className="veil-input-list">
-            {modes.map(m => <span key={m.id}>─ {m.label}</span>)}
-          </div>
-        </div>
-
-        {/* Row 3: full-width bracketed rule with label */}
-        <div className="veil-rule">
-          <span className="veil-rule-label">2026 · An interactive field</span>
-        </div>
-
-        {/* Row 4: CTA (left) + build tag (right) */}
         <button className="cta-btn" onClick={() => setEntered(true)}>
           <span className="cc tl" /><span className="cc tr" />
           <span className="cc bl" /><span className="cc br" />
           Wander the field
         </button>
-        <span className="veil-build">N3</span>
+
+        <div className="veil-rule">
+          <span className="veil-rule-label">An interactive field · 2026</span>
+        </div>
       </div>
     </div>
   )
