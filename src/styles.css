@@ -572,7 +572,7 @@ canvas.grass {
   letter-spacing: 0.01em;
   transition: border-color var(--dur-fast), transform var(--dur-fast);
   flex-shrink: 0;
-  margin-bottom: 28px;            /* space between CTA and veil-rule */
+  /* no margin-bottom — veil-rule is absolutely positioned, out of flex flow */
 }
 .cta-btn:hover {
   border-color: oklch(0.65 0.03 100);
@@ -615,8 +615,12 @@ canvas.grass {
   margin-bottom: 56px;            /* space to CTA */
 }
 
-/* Bracketed rule — centered, fixed width */
+/* Bracketed rule — bottom-anchored colophon, decoupled from the title/CTA lockup */
 .veil-rule {
+  position: absolute;
+  bottom: clamp(36px, 6vh, 64px);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -642,17 +646,18 @@ canvas.grass {
    Responsive
 ============================================================ */
 @media (max-width: 640px) {
-  /* ── Wordmark ── */
+  /* ── Wordmark — title only, no rule or subline ── */
   .wordmark {
     font-size: 20px;
     top: max(14px, calc(env(safe-area-inset-top, 0px) + 10px));
     left: 16px;
   }
-  .wordmark .sub { font-size: var(--t-md); }   /* 14px on mobile */
+  .wordmark-rule { display: none; }   /* N5: remove rule on mobile */
+  .wordmark .sub { display: none; }   /* N5: remove subline on mobile */
 
   /* ── Mode picker chips — left-aligned below wordmark ── */
   .picker-wrap {
-    top: max(76px, calc(env(safe-area-inset-top, 0px) + 72px));
+    top: max(56px, calc(env(safe-area-inset-top, 0px) + 52px));  /* tighter since no subline */
     right: auto;
     left: 16px;
   }
@@ -661,7 +666,7 @@ canvas.grass {
     padding: 8px 12px;
   }
 
-  /* ── Camera panel — 128×96 corner thumbnail ── */
+  /* ── Camera panel — 128×96 corner thumbnail, single-bracket ── */
   .cam-panel {
     top: max(14px, calc(env(safe-area-inset-top, 0px) + 10px));
     right: 16px;
@@ -678,6 +683,8 @@ canvas.grass {
     aspect-ratio: auto;
     height: 96px;
   }
+  /* N5: hide outer .pc brackets on mobile — only .vc video ticks remain */
+  .cam-panel .pc { display: none; }
   /* Status strip at bottom handles conf — hide panel strip on mobile */
   .cam-status-strip { display: none; }
 
@@ -707,29 +714,25 @@ canvas.grass {
   }
   .sheet-handle { display: block; }
 
+  /* N5: bigger × glyph — 28px, keep 40×40 tap target */
+  .tweaks-close { font-size: 28px; }
+
   /* ── Scrim — active on mobile ── */
   .tweaks-scrim { display: block; }
 
-  /* ── Field settings toggle ── */
+  /* ── Field settings toggle — N5: centered at bottom ── */
   .tweaks-toggle {
-    right: 16px;
-    bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 8px));
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
   }
 
-  /* ── Status strip — 14px, wrappable ── */
-  .status-strip {
-    bottom: calc(max(14px, calc(env(safe-area-inset-bottom, 0px) + 8px)) + 56px);
-    left: 16px;
-    font-size: var(--t-md);
-    flex-wrap: wrap;
-    max-width: calc(100vw - 148px);   /* leave room for field settings chip */
-  }
-  .status-strip .spec { font-size: var(--t-md); }
-  .strip-sep          { font-size: var(--t-md); }
-  .strip-val          { font-size: var(--t-md); }
+  /* ── N5: Status strip hidden on mobile — chip centered is enough ── */
+  .status-strip { display: none; }
 
-  /* ── Taller pedestal on mobile for status strip ── */
-  .chrome-pedestal-bottom { height: 160px; }
+  /* ── Pedestal shrinks — no status strip to carry ── */
+  .chrome-pedestal-bottom { height: 100px; }
 
   /* ── Veil — mobile composition ── */
   .veil {
@@ -741,9 +744,13 @@ canvas.grass {
   }
   .cta-btn {
     padding: 16px 36px;
-    margin-bottom: 22px;
+    /* no margin-bottom — veil-rule is absolutely positioned */
   }
-  .veil-rule { width: min(320px, 90vw); }
+  /* N5: mobile rule anchored at bottom with tighter clearance */
+  .veil-rule {
+    bottom: clamp(24px, 5vh, 40px);
+    width: min(320px, 90vw);
+  }
   .veil-rule-label { font-size: var(--t-md); }  /* 14px on mobile */
 }
 

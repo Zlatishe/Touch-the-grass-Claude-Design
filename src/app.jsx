@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import GrassField from './grass-field.jsx'
 import TweaksPanel from './tweaks.jsx'
 import StatusStrip from './status-strip.jsx'
@@ -156,6 +156,11 @@ export default function App() {
     try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*') } catch (_) {}
   }
 
+  // Stable callback — same reference across renders, so GrassField's rebuild
+  // useCallback never changes and the canvas resize effect doesn't re-fire on
+  // every state update (the N4 regression: inline arrow caused 30 Hz canvas wipes)
+  const handleStats = useCallback(s => setBladeCount(s.bladeCount), [])
+
   const palette = PALETTES[cfg.palette] || PALETTES.midnight
   const camTracking = camStatus === 'on' || camStatus === 'no-hand'
 
@@ -168,7 +173,7 @@ export default function App() {
         wind={cfg.wind}
         paused={!entered}
         handRef={handRef}
-        onStats={stats => setBladeCount(stats.bladeCount)}
+        onStats={handleStats}
       />
 
       {/* Cursor ring → bracket frame */}
@@ -286,7 +291,7 @@ export default function App() {
         <button className="cta-btn" onClick={() => setEntered(true)}>
           <span className="cc tl" /><span className="cc tr" />
           <span className="cc bl" /><span className="cc br" />
-          Wander the field
+          Begin
         </button>
 
         <div className="veil-rule">
