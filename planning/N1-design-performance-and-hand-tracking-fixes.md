@@ -244,9 +244,11 @@ Log results in `planning/N1-test-results.md`.
 
 ## 9 · Open questions (flag before implementation)
 
-1. Are we OK with adding a build step (Vite / Node in the repo)? If not, we can stay single-file and ship **production** React via `react@18/umd/react.production.min.js` + drop Babel by pre-compiling the JSX ourselves with a one-off `npx esbuild src.jsx --bundle --minify`. Middle-ground option.
-2. Should the "Keys" mode stay visible on mobile? It does nothing there. Plan: hide below 640px unless a physical keyboard is detected.
-3. For hand-tracking, is one-euro smoothing a good enough call, or do we want to swap to Kalman? (Kalman is overkill for 2D hand tracking — recommendation: one-euro.)
+Are we OK with adding a build step (Vite / Node in the repo)? - Yes
+
+Should the "Keys" mode stay visible on mobile? It does nothing there. Plan: hide bel 640px unless a physical keyboard is detected.
+
+3. For hand-tracking, is one-euro smoothing a good enough call, or do we want to swap to ‹alman? one-euro is good.
 
 ---
 
