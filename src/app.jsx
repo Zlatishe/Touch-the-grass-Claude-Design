@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import GrassField from './grass-field.jsx'
 import TweaksPanel from './tweaks.jsx'
+import StatusStrip from './status-strip.jsx'
 import { startHandTracker } from './hand-tracker.js'
 import { PALETTES } from './palettes.js'
+import { useFps } from './use-fps.js'
 
 const DEFAULTS = { density: 3.4, bladeLength: 130, wind: 0.22, palette: 'midnight' }
 
@@ -30,6 +32,9 @@ export default function App() {
   const [camError,   setCamError]   = useState('')
   const [tweaksOpen, setTweaksOpen] = useState(false)
   const [cfg,        setCfg]        = useState(DEFAULTS)
+  const [handConf,   setHandConf]   = useState(0)
+
+  const fps = useFps()
 
   const handRef    = useRef({ x: -9999, y: -9999, active: false })
   const cursorRef  = useRef(null)
@@ -121,11 +126,13 @@ export default function App() {
         if (!hand || !hand.active) {
           handRef.current = { ...handRef.current, active: false }
           if (camDotRef.current)  camDotRef.current.style.opacity  = '0'
+          setHandConf(0)
           hideRing(); return
         }
         const px = hand.x * window.innerWidth
         const py = hand.y * window.innerHeight
         handRef.current = { x: px, y: py, active: true }
+        setHandConf(hand.confidence ?? 0)
         moveRing(px, py)
         if (camDotRef.current) {
           camDotRef.current.style.left    = hand.x * 100 + '%'
@@ -173,8 +180,11 @@ export default function App() {
         handRef={handRef}
       />
 
-      {/* Cursor ring */}
-      <div ref={cursorRef} className="cursor-ring" style={{ opacity: 0 }} />
+      {/* Cursor ring → bracket frame */}
+      <div ref={cursorRef} className="cursor-ring" style={{ opacity: 0 }}>
+        <span className="cr tl" /><span className="cr tr" />
+        <span className="cr bl" /><span className="cr br" />
+      </div>
 
       {/* ── UI chrome ─────────────────────────────────────────────────────── */}
       <div className="chrome">
@@ -205,28 +215,44 @@ export default function App() {
           </div>
         </div>
 
-        {/* Camera panel */}
+        {/* Camera panel — Role B: bracket-only, ink status */}
         {inputMode === 'camera' && (
           <div className="cam-panel">
+            <span className="pc tl" /><span className="pc tr" />
+            <span className="pc bl" /><span className="pc br" />
             <div className="cam-video-wrap">
+              <span className="vc tl" /><span className="vc tr" />
+              <span className="vc bl" /><span className="vc br" />
               <video ref={videoRef} playsInline muted />
-              {/* Skeleton overlay canvas — mirrored to match video */}
               <canvas ref={sketchRef} className="cam-sketch" />
               <div ref={camDotRef} className="hand-dot" style={{ opacity: 0 }} />
             </div>
-            <div className={`cam-status ${camTracking ? '' : 'off'}`}>
-              <span>
-                <span className="dot-indicator" />
-                {CAM_STATUS_LABEL[camStatus] || camStatus}
+            <div className="cam-status-strip">
+              <span className={`cam-track-dot ${camTracking ? 'on' : ''}`} />
+              <span className="spec">Mode</span>
+              <span className="data">
+                {camStatus === 'loading' ? 'INIT' : camTracking ? 'TRACK' : 'WAIT'}
               </span>
-              <span>1 hand</span>
+              <span className="cam-sep">·</span>
+              <span className="spec">Hands</span>
+              <span className="data">{camTracking ? '01' : '00'}</span>
+              {handConf > 0 && (
+                <>
+                  <span className="cam-sep">·</span>
+                  <span className="spec">Conf</span>
+                  <span className="data">
+                    .{Math.round(handConf * 100).toString().padStart(2, '0')}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}
 
-        {/* Camera error */}
+        {/* Camera error — ink-only toast */}
         {camStatus === 'error' && inputMode === 'camera' && (
           <div className="error-toast">
+            <span className="spec">ERR</span>
             Camera unavailable — {camError}
           </div>
         )}
@@ -246,25 +272,52 @@ export default function App() {
             Controls
           </button>
         )}
+
+        {/* Status strip — bottom-left specimen annotation */}
+        {entered && (
+          <StatusStrip
+            inputMode={inputMode}
+            palette={cfg.palette}
+            fps={fps}
+            confidence={handConf}
+            camTracking={camTracking}
+          />
+        )}
       </div>
 
-      {/* ── Intro veil ────────────────────────────────────────────────────── */}
+      {/* ── Intro veil — asymmetric specimen sheet ───────────────────────── */}
       <div className={`veil ${entered ? 'hidden' : ''}`}>
+        {/* Screen-corner brackets */}
         <div className="veil-corner tl" />
         <div className="veil-corner tr" />
         <div className="veil-corner bl" />
         <div className="veil-corner br" />
-        <div className="veil-vert" />
 
-        <div className="veil-rule" />
+        {/* Row 1: sequence tag (left) + artifact tag (right) */}
+        <span className="veil-seq">01 ─</span>
+        <span className="veil-artifact">[TTG-01]</span>
 
-        <h1>Touch the grass</h1>
+        {/* Row 2: huge title (left) + inputs specimen (right) */}
+        <h1>Touch<br />the<br />grass</h1>
+        <div className="veil-inputs">
+          <span className="spec">Inputs</span>
+          <div className="veil-input-list">
+            {modes.map(m => <span key={m.id}>─ {m.label}</span>)}
+          </div>
+        </div>
 
+        {/* Row 3: full-width bracketed rule with label */}
+        <div className="veil-rule">
+          <span className="veil-rule-label">2026 · An interactive field</span>
+        </div>
+
+        {/* Row 4: CTA (left) + build tag (right) */}
         <button className="cta-btn" onClick={() => setEntered(true)}>
           <span className="cc tl" /><span className="cc tr" />
           <span className="cc bl" /><span className="cc br" />
           Wander the field
         </button>
+        <span className="veil-build">N3</span>
       </div>
     </div>
   )
