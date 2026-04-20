@@ -188,6 +188,10 @@ canvas.grass {
   border-radius: 0;
   touch-action: manipulation;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
   letter-spacing: 0.01em;
   line-height: 1;
   white-space: nowrap;
@@ -709,6 +713,7 @@ canvas.grass {
     border-radius: 0;
     max-height: 70dvh;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 20px 20px max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px));
     transform: translateY(24px);
     transition:
