@@ -5,7 +5,7 @@ const CELL = 128
 // Hand influence radius
 const IR = 210
 const IR2 = IR * IR
-const MAX_BEND = 1.1
+const MAX_BEND = 1.25
 
 // ── Spatial hash helpers ──────────────────────────────────────────────────────
 function buildGrid(blades) {
@@ -57,8 +57,8 @@ function buildBlades(w, h, density, bladeLength) {
       angle:     restAngle, vAngle: 0,
       phase:     Math.random() * Math.PI * 2,
       phase2:    Math.random() * Math.PI * 2,
-      stiffness: 0.012 + Math.random() * 0.014,
-      damping:   0.82  + Math.random() * 0.06,
+      stiffness: 0.016 + Math.random() * 0.018,
+      damping:   0.84  + Math.random() * 0.06,
       mass:      0.6   + Math.random() * 0.8,
     }
   }
@@ -155,7 +155,7 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
         const dth = Math.max(0.001, (b.t - a.t) / 1000)
         handSpeed = Math.hypot((b.x - a.x) / dth, (b.y - a.y) / dth)
       }
-      const push = 1.3 + Math.min(1.1, handSpeed * 0.0018)
+      const push = 1.7 + Math.min(1.4, handSpeed * 0.002)
 
       // Wind params
       const wt    = ts / 1000
