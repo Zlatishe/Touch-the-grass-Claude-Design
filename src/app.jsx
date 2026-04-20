@@ -5,7 +5,7 @@ import StatusStrip from './status-strip.jsx'
 import { startHandTracker } from './hand-tracker.js'
 import { PALETTES } from './palettes.js'
 
-const DEFAULTS = { density: 3.4, bladeLength: 130, wind: 0.22, palette: 'midnight' }
+const DEFAULTS = { density: 3.4, bladeLength: 150, wind: 0.22, palette: 'midnight' }
 
 const isTouchDevice = () => navigator.maxTouchPoints > 1 || 'ontouchstart' in window
 
@@ -15,6 +15,9 @@ const ALL_MODES = [
   { id: 'camera', label: 'Camera' },
   { id: 'keys',   label: 'Keys' },
 ]
+
+// Events originating on UI chrome should not move the grass cursor
+const isOnChrome = el => el && el.closest && el.closest('.chrome')
 
 export default function App() {
   const [entered,    setEntered]    = useState(false)
@@ -51,10 +54,25 @@ export default function App() {
   // ── cursor / touch ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!entered || inputMode !== 'cursor') return
-    const show = (x, y) => { handRef.current = { x, y, active: true }; moveRing(x, y) }
-    const hide = () => { handRef.current = { ...handRef.current, active: false }; hideRing() }
-    const onMouse = e => show(e.clientX, e.clientY)
-    const onTouch = e => { if (e.touches?.length) show(e.touches[0].clientX, e.touches[0].clientY) }
+    const show = (x, y) => {
+      handRef.current = { x, y, active: true }
+      moveRing(x, y)
+      document.body.style.cursor = 'none'
+    }
+    const hide = () => {
+      handRef.current = { ...handRef.current, active: false }
+      hideRing()
+      document.body.style.cursor = 'default'
+    }
+    const onMouse = e => {
+      if (isOnChrome(e.target)) { hide(); return }
+      show(e.clientX, e.clientY)
+    }
+    const onTouch = e => {
+      if (!e.touches?.length) return
+      if (isOnChrome(e.touches[0].target)) { hide(); return }
+      show(e.touches[0].clientX, e.touches[0].clientY)
+    }
     window.addEventListener('mousemove',   onMouse)
     window.addEventListener('mouseleave',  hide)
     window.addEventListener('touchstart',  onTouch, { passive: true })
@@ -70,6 +88,16 @@ export default function App() {
       window.removeEventListener('touchcancel', hide)
     }
   }, [inputMode, entered])
+
+  // ── body-lock when tweaks panel is open on mobile ───────────────────────────
+  useEffect(() => {
+    if (tweaksOpen) {
+      document.body.classList.add('body-lock')
+    } else {
+      document.body.classList.remove('body-lock')
+    }
+    return () => document.body.classList.remove('body-lock')
+  }, [tweaksOpen])
 
   // ── keyboard ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -134,9 +162,9 @@ export default function App() {
     return () => { camStopRef.current?.(); camStopRef.current = null }
   }, [inputMode, entered])
 
-  // ── cursor style ─────────────────────────────────────────────────────────────
+  // ── cursor style — post-enter visibility managed per-move in cursor effect ──
   useEffect(() => {
-    document.body.style.cursor = entered ? 'none' : 'default'
+    if (!entered) document.body.style.cursor = 'default'
   }, [entered])
 
   // ── edit-mode bridge (design tool integration) ────────────────────────────
@@ -261,15 +289,17 @@ export default function App() {
         {/* Field settings panel */}
         <TweaksPanel open={tweaksOpen} state={cfg} onChange={handleCfg} onClose={() => setTweaksOpen(false)} />
 
-        {/* Field settings toggle — chip, hidden when panel is open */}
+        {/* Field settings toggle — dock wrapper owns positioning; chip is plain */}
         {!tweaksOpen && (
-          <button
-            className="chip tweaks-toggle"
-            onClick={() => setTweaksOpen(true)}
-            aria-label="Open field settings"
-          >
-            Field settings
-          </button>
+          <div className="tweaks-dock">
+            <button
+              className="chip"
+              onClick={() => setTweaksOpen(true)}
+              aria-label="Open field settings"
+            >
+              Field settings
+            </button>
+          </div>
         )}
 
         {/* Status strip — bottom-left specimen annotation */}

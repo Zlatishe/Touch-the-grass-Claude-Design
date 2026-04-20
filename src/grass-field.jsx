@@ -1,11 +1,11 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect } from 'react'
 
 // Spatial hash cell size — balances lookup cost vs grid overhead
 const CELL = 128
 // Hand influence radius
 const IR = 210
 const IR2 = IR * IR
-const MAX_BEND = 1.4
+const MAX_BEND = 1.25
 
 // ── Spatial hash helpers ──────────────────────────────────────────────────────
 function buildGrid(blades) {
@@ -36,7 +36,10 @@ function collectNearby(grid, hx, hy) {
 
 // ── Build blade list ──────────────────────────────────────────────────────────
 function buildBlades(w, h, density, bladeLength) {
-  const n = Math.round((w * h / 1000) * density)
+  // Boost density on small viewports so mobile feels like a field, not a cropped desktop
+  const areaPx = w * h
+  const mobileMult = areaPx < 500000 ? 1.6 : 1.0
+  const n = Math.round((areaPx / 1000) * density * mobileMult)
   const arr = new Array(n)
   for (let i = 0; i < n; i++) {
     const x = Math.random() * w
@@ -54,8 +57,8 @@ function buildBlades(w, h, density, bladeLength) {
       angle:     restAngle, vAngle: 0,
       phase:     Math.random() * Math.PI * 2,
       phase2:    Math.random() * Math.PI * 2,
-      stiffness: 0.014 + Math.random() * 0.020,
-      damping:   0.90  + Math.random() * 0.05,
+      stiffness: 0.016 + Math.random() * 0.018,
+      damping:   0.84  + Math.random() * 0.06,
       mass:      0.6   + Math.random() * 0.8,
     }
   }
@@ -84,19 +87,30 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
   const sizeRef    = useRef({ w: 0, h: 0 })
   const rafRef     = useRef(0)
   const histRef    = useRef([])
+  // Ref so the resize effect can call the latest rebuild without depending on it
+  const rebuildFnRef = useRef(null)
 
   // Fixed 5 segments — same on all devices now (density handles perf, not segment count)
   const SEGS = 5
 
-  const rebuild = useCallback((w, h) => {
-    const blades = buildBlades(w, h, density, bladeLength)
-    bladesRef.current = blades
-    gridRef.current   = buildGrid(blades)
-    sizeRef.current   = { w, h }
-    onStats?.({ bladeCount: blades.length })
+  // Keep rebuildFnRef current whenever density/bladeLength changes
+  useEffect(() => {
+    rebuildFnRef.current = () => {
+      const { w, h } = sizeRef.current
+      if (!w || !h) return
+      const blades = buildBlades(w, h, density, bladeLength)
+      bladesRef.current = blades
+      gridRef.current   = buildGrid(blades)
+      onStats?.({ bladeCount: blades.length })
+    }
   }, [density, bladeLength, onStats])
 
-  // Canvas resize
+  // Rebuild blades when density or bladeLength actually changes (never touches canvas.width)
+  useEffect(() => {
+    rebuildFnRef.current?.()
+  }, [density, bladeLength])
+
+  // Canvas resize — runs once on mount; calls rebuildFnRef so no cascade on prop changes
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -106,13 +120,14 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
       canvas.width  = Math.floor(rect.width  * dpr)
       canvas.height = Math.floor(rect.height * dpr)
       canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0)
-      rebuild(rect.width, rect.height)
+      sizeRef.current = { w: rect.width, h: rect.height }
+      rebuildFnRef.current?.()
     }
     onResize()
     const ro = new ResizeObserver(onResize)
     ro.observe(canvas)
     return () => ro.disconnect()
-  }, [rebuild])
+  }, [])
 
   // Render loop
   useEffect(() => {
@@ -140,7 +155,7 @@ export default function GrassField({ palette, density, bladeLength, wind, paused
         const dth = Math.max(0.001, (b.t - a.t) / 1000)
         handSpeed = Math.hypot((b.x - a.x) / dth, (b.y - a.y) / dth)
       }
-      const push = 1.8 + Math.min(1.5, handSpeed * 0.002)
+      const push = 1.7 + Math.min(1.4, handSpeed * 0.002)
 
       // Wind params
       const wt    = ts / 1000
