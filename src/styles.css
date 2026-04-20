@@ -689,7 +689,7 @@ canvas.grass {
 
   /* ── Mode picker chips — left-aligned below wordmark ── */
   .picker-wrap {
-    top: max(56px, calc(env(safe-area-inset-top, 0px) + 52px));  /* tighter since no subline */
+    top: max(44px, calc(env(safe-area-inset-top, 0px) + 40px));  /* title-only lockup, ~12px below wordmark bottom */
     right: auto;
     left: 16px;
   }
