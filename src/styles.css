@@ -201,10 +201,14 @@ canvas.grass {
     color        var(--dur-fast) var(--ease-push),
     transform    var(--dur-fast) var(--ease-push);
 }
-.chip:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-  transform: translateY(-1px);
+/* Hover effects scoped to devices with real hover (mouse/trackpad).
+   Touch devices skip this block — no sticky :hover on tap. */
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+    transform: translateY(-1px);
+  }
 }
 .chip.active {
   background: var(--ink);
@@ -347,13 +351,17 @@ canvas.grass {
     visibility 0s linear 0s;              /* show BEFORE fade-in */
 }
 
-/* Drag handle — mobile only; tapping dismisses the sheet */
+/* Drag handle — mobile only; tapping dismisses the sheet.
+   Padding expands hit target to ~80×27px without changing the visible notch. */
 .sheet-handle {
   display: none;
   width: 32px; height: 3px;
   background: var(--ink-mute);
+  background-clip: content-box;
   border-radius: 2px;
-  margin: 0 auto 18px;
+  margin: -12px auto 6px;
+  padding: 12px 24px;
+  box-sizing: content-box;
   cursor: pointer;
   touch-action: none;
 }
@@ -455,7 +463,9 @@ canvas.grass {
     background   var(--dur-fast) var(--ease-push);
   pointer-events: auto;
 }
-.palette-tile:hover { border-color: var(--ink); }
+@media (hover: hover) and (pointer: fine) {
+  .palette-tile:hover { border-color: var(--ink); }
+}
 .palette-tile.active {
   background: var(--ink);
   border-color: var(--ink);
@@ -493,7 +503,7 @@ canvas.grass {
   width: 44px; height: 44px;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  transition: opacity var(--dur-fast);
+  /* no opacity transition — instant toggle so OS cursor handoff is seamless */
   z-index: 5;
   will-change: left, top;
 }
@@ -550,14 +560,18 @@ canvas.grass {
 .error-toast .spec { color: var(--ink); font-size: var(--t-md); }
 
 /* ============================================================
-   Field settings toggle — positioned chip
+   Field settings dock — wrapper owns positioning, chip stays plain
+   pointer-events: none on dock so grass canvas stays interactive
+   in the empty space around the chip.
 ============================================================ */
-.tweaks-toggle {
+.tweaks-dock {
   position: absolute;
   bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px));
   right: max(24px, calc(env(safe-area-inset-right, 0px) + 18px));
   z-index: 11;
+  pointer-events: none;
 }
+.tweaks-dock > * { pointer-events: auto; }
 
 /* ============================================================
    Tweaks scrim — tap-to-close backdrop (mobile only)
@@ -590,9 +604,11 @@ canvas.grass {
   flex-shrink: 0;
   /* no margin-bottom — veil-rule is absolutely positioned, out of flex flow */
 }
-.cta-btn:hover {
-  border-color: oklch(0.65 0.03 100);
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .cta-btn:hover {
+    border-color: oklch(0.65 0.03 100);
+    transform: translateY(-1px);
+  }
 }
 .cta-btn:active { opacity: 0.75; }
 
@@ -713,7 +729,7 @@ canvas.grass {
     border-radius: 0;
     max-height: 70dvh;
     overflow-y: auto;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     padding: 20px 20px max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px));
     transform: translateY(24px);
     transition:
@@ -737,11 +753,12 @@ canvas.grass {
   /* ── Scrim — active on mobile ── */
   .tweaks-scrim { display: block; }
 
-  /* ── Field settings toggle — N5: centered at bottom ── */
-  .tweaks-toggle {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
+  /* ── Field settings dock — flex-center the chip, no transform needed ── */
+  .tweaks-dock {
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
     bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
   }
 

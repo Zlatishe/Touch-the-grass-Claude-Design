@@ -54,8 +54,16 @@ export default function App() {
   // ── cursor / touch ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!entered || inputMode !== 'cursor') return
-    const show = (x, y) => { handRef.current = { x, y, active: true }; moveRing(x, y) }
-    const hide = () => { handRef.current = { ...handRef.current, active: false }; hideRing() }
+    const show = (x, y) => {
+      handRef.current = { x, y, active: true }
+      moveRing(x, y)
+      document.body.style.cursor = 'none'
+    }
+    const hide = () => {
+      handRef.current = { ...handRef.current, active: false }
+      hideRing()
+      document.body.style.cursor = 'default'
+    }
     const onMouse = e => {
       if (isOnChrome(e.target)) { hide(); return }
       show(e.clientX, e.clientY)
@@ -154,9 +162,9 @@ export default function App() {
     return () => { camStopRef.current?.(); camStopRef.current = null }
   }, [inputMode, entered])
 
-  // ── cursor style ─────────────────────────────────────────────────────────────
+  // ── cursor style — post-enter visibility managed per-move in cursor effect ──
   useEffect(() => {
-    document.body.style.cursor = entered ? 'none' : 'default'
+    if (!entered) document.body.style.cursor = 'default'
   }, [entered])
 
   // ── edit-mode bridge (design tool integration) ────────────────────────────
@@ -281,15 +289,17 @@ export default function App() {
         {/* Field settings panel */}
         <TweaksPanel open={tweaksOpen} state={cfg} onChange={handleCfg} onClose={() => setTweaksOpen(false)} />
 
-        {/* Field settings toggle — chip, hidden when panel is open */}
+        {/* Field settings toggle — dock wrapper owns positioning; chip is plain */}
         {!tweaksOpen && (
-          <button
-            className="chip tweaks-toggle"
-            onClick={() => setTweaksOpen(true)}
-            aria-label="Open field settings"
-          >
-            Field settings
-          </button>
+          <div className="tweaks-dock">
+            <button
+              className="chip"
+              onClick={() => setTweaksOpen(true)}
+              aria-label="Open field settings"
+            >
+              Field settings
+            </button>
+          </div>
         )}
 
         {/* Status strip — bottom-left specimen annotation */}
